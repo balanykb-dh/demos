@@ -367,4 +367,4 @@ LEV = dict(
     logo_svg=TIRE_LOGO.replace("#F2B01E", "#EF6A2E"), hero_svg=tire_svg(hub="#EF6A2E"),
 )
 
-SITES = [SHYNOMONTAZH, VINTAZH, VETIS, TEPLYI_DIM, LEV]  # PERETYAZHKA: відмова 28.10.2026, лишається як шаблон для ніші
+SITES = [SHYNOMONTAZH, VINTAZH, VETIS, LEV]  # PERETYAZHKA (відмова) і TEPLYI_DIM (уже має власний сайт) лишаються як шаблони ніш
