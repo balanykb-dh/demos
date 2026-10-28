@@ -187,7 +187,7 @@ WARM = dict(
       linear-gradient(315deg,#DDA674 25%,transparent 25%),linear-gradient(45deg,#DDA674 25%,transparent 25%);
     background-size:30px 30px;background-position:-15px 0,-15px 0,0 0,0 0}
   .tile::before{content:"";position:absolute;top:12px;right:12px;width:14px;height:14px;border-top:2px solid var(--accent);border-right:2px solid var(--accent)}
-  .tile--cta::before{border-color:rgba(255,255,255,.4)}
+  .tile--cta::before{display:none}
   .band__in{border-color:transparent}
   .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:22px}
   .stat{border:2px solid rgba(255,255,255,.18);border-radius:6px;padding:12px 10px}
