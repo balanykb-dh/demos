@@ -24,6 +24,15 @@ ICONS = dict(
 )
 
 
+def fmt(h):
+    """9 -> '9:00', 9.5 -> '9:30'"""
+    return f"{int(h)}:{round((h % 1) * 60):02d}"
+
+
+def hhmm(h):
+    return f"{int(h):02d}:{round((h % 1) * 60):02d}"
+
+
 def hours_model(h):
     """-> (rows, hours_json, always_open, schema_spec)"""
     if h == "24/7":
@@ -33,15 +42,15 @@ def hours_model(h):
     vals = {d: h.get(d) for d in range(7)}
     if len({vals[d] for d in range(7)}) == 1 and vals[0]:
         o, c = vals[0]
-        rows = [dict(day=None, label="Щодня", value=f"{o}:00–{c}:00")]
+        rows = [dict(day=None, label="Щодня", value=f"{fmt(o)}–{fmt(c)}")]
     else:
-        rows = [dict(day=d, label=DAY_LABELS[d], value=(f"{vals[d][0]}:00–{vals[d][1]}:00" if vals[d] else "вихідний"))
+        rows = [dict(day=d, label=DAY_LABELS[d], value=(f"{fmt(vals[d][0])}–{fmt(vals[d][1])}" if vals[d] else "вихідний"))
                 for d in (1, 2, 3, 4, 5, 6, 0)]
     spec = []
     for d in (1, 2, 3, 4, 5, 6, 0):
         if vals[d]:
             spec.append({"@type": "OpeningHoursSpecification", "dayOfWeek": SCHEMA_DAYS[d],
-                         "opens": f"{vals[d][0]:02d}:00", "closes": f"{vals[d][1]:02d}:00"})
+                         "opens": hhmm(vals[d][0]), "closes": hhmm(vals[d][1])})
     return rows, {d: (list(vals[d]) if vals[d] else None) for d in range(7)}, False, spec
 
 

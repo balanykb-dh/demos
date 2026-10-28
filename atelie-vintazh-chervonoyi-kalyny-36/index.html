@@ -520,6 +520,7 @@
   var el = document.getElementById('status');
   if (always){ el.textContent = 'Відчинено цілодобово'; el.classList.add('is-open'); el.hidden = false; return; }
   var days = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+  function fmt(h){ var m = Math.round((h % 1) * 60); return Math.floor(h) + ':' + (m < 10 ? '0' : '') + m; }
   var names = ['у неділю','у понеділок','у вівторок','у середу','у четвер','у пʼятницю','у суботу'];
   function kyivNow(){
     var zones = ['Europe/Kyiv','Europe/Kiev'];
@@ -537,12 +538,12 @@
   var row = document.querySelector('.hours tr[data-day="' + now.day + '"]');
   if (row) row.classList.add('is-today');
   var t = hours[now.day], text, open = false;
-  if (t && now.time >= t[0] && now.time < t[1]) { open = true; text = 'Зараз відчинено, до ' + t[1] + ':00'; }
-  else if (t && now.time < t[0]) { text = 'Зараз зачинено, відчинимося о ' + t[0] + ':00'; }
+  if (t && now.time >= t[0] && now.time < t[1]) { open = true; text = 'Зараз відчинено, до ' + fmt(t[1]); }
+  else if (t && now.time < t[0]) { text = 'Зараз зачинено, відчинимося о ' + fmt(t[0]); }
   else {
     for (var k = 1; k <= 7; k++){
       var d = (now.day + k) % 7;
-      if (hours[d]) { text = 'Зараз зачинено, відчинимося ' + (k === 1 ? 'завтра' : names[d]) + ' о ' + hours[d][0] + ':00'; break; }
+      if (hours[d]) { text = 'Зараз зачинено, відчинимося ' + (k === 1 ? 'завтра' : names[d]) + ' о ' + fmt(hours[d][0]); break; }
     }
   }
   el.textContent = text;
