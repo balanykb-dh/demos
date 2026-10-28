@@ -186,4 +186,4 @@ VINTAZH = dict(
     logo_svg=TAPE_LOGO, hero_svg=NEEDLE,
 )
 
-SITES = [SHYNOMONTAZH, PERETYAZHKA, VINTAZH]
+SITES = [SHYNOMONTAZH, VINTAZH]  # PERETYAZHKA: відмова 28.10.2026, лишається як шаблон для ніші
