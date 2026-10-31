@@ -160,7 +160,14 @@ main { padding-block: 22px 40px; }
   display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 10px; background: var(--sunk);
   margin-bottom: 14px;
 }
-.field { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.field { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0; min-height: 38px; font-size: 15px; line-height: 1.3; }
+select.field {
+  -webkit-appearance: none; appearance: none; padding-right: 28px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238A96A6' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+}
+/* iPhone zooms the page into any field smaller than 16px and leaves it zoomed; keep fields at 16px on touch screens. */
+@media (pointer: coarse) { .field, .bk-paste textarea.field { font-size: 16px; } }
 .field:focus { border-color: var(--tone); outline: none; box-shadow: 0 0 0 3px var(--tone-soft); }
 .add .grow { flex: 1 1 180px; }
 .add .num { width: 84px; flex: 0 0 auto; font-family: var(--f-mono); }
@@ -210,11 +217,15 @@ main { padding-block: 22px 40px; }
 .tick:hover { background: var(--tone-soft); }
 .tick[aria-pressed="true"] { background: var(--tone); color: var(--surface); }
 
-/* edit form inside list */
-.edit-form { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; padding: 4px 0; }
-.edit-form .grow { flex: 1 1 180px; }
-.edit-form .num { width: 84px; font-family: var(--f-mono); }
-.edit-actions { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+/* edit form inside list: one tidy card — name on top, settings in a grid, actions below */
+.edit-form {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%;
+  padding: 12px; border-radius: 10px; background: var(--sunk);
+}
+.edit-form[data-form="reward-edit"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.edit-form .title-f { grid-column: 1 / -1; }
+.edit-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+.edit-actions .danger { margin-left: auto; }
 
 /* gratitude */
 .g-form { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: var(--sunk); margin-bottom: 14px; }
@@ -247,7 +258,7 @@ main { padding-block: 22px 40px; }
 /* history */
 .day-h { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 14px 0 4px; display: flex; justify-content: space-between; }
 .day-h:first-child { padding-top: 0; }
-.h-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 32px; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+.h-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 52px 32px; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
 .day-h + .h-row { border-top: 0; }
 .h-time { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .h-title { min-width: 0; font-size: 14px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
@@ -255,8 +266,12 @@ main { padding-block: 22px 40px; }
 .h-pts.plus { color: var(--earn); }
 .h-pts.minus { color: var(--spend); }
 .h-pts.zero { color: var(--muted); }
-.h-row .armed { width: auto; padding: 0 8px; color: var(--danger); font-size: 12px; }
-.h-row:has(.armed) { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+/* "Видалити?" confirm sits over the row's end instead of resizing the columns */
+.h-row { position: relative; }
+.h-row .armed {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: auto; height: 30px; padding: 0 10px;
+  background: var(--surface); color: var(--danger); font-size: 13px; font-weight: 500; box-shadow: inset 0 0 0 1px var(--danger);
+}
 .more { margin-top: 10px; }
 
 .p-tools { display: flex; align-items: center; gap: 10px; }
@@ -293,13 +308,12 @@ main { padding-block: 22px 40px; }
 .link-btn { border: 0; background: none; padding: 0; color: var(--tone); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
 .link-btn:hover { text-decoration: underline; }
 .timer-left { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
-.row.timing { box-shadow: inset 3px 0 0 var(--tone); padding-left: 10px; }
+.row.timing .tick { box-shadow: 0 0 0 3px var(--tone-soft); }
 
-/* labelled number fields in edit forms */
-.edit-form { align-items: flex-end; }
-.mini { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--muted); }
-.mini .field { width: 84px; font-family: var(--f-mono); }
-.mini select.field { width: auto; font-family: var(--f-body); }
+/* labelled fields in edit forms */
+.mini { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); min-width: 0; }
+.mini .field { width: 100%; color: var(--ink); }
+.mini input[type="number"].field { font-family: var(--f-mono); }
 
 /* history: records / stats switch */
 .seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--sunk); gap: 2px; }
@@ -348,6 +362,8 @@ main { padding-block: 22px 40px; }
   .stats { gap: 14px 12px; }
   .stat-k { font-size: 11px; }
   .panel { padding: 14px 14px 10px; }
+  .edit-form[data-form="reward-edit"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .edit-form { padding: 10px; }
   .bk-sum { padding: 12px 14px; }
   .bk-body { padding: 0 14px 12px; }
 }
@@ -439,7 +455,7 @@ main { padding-block: 22px 40px; }
           <input class="field num" id="rewardCost" type="number" min="1" max="100000" value="50" required aria-label="Ціна в балах">
           <select class="field" id="rewardKind" aria-label="Тип нагороди">
             <option value="reward">нагорода</option>
-            <option value="box">сюрприз-скринька</option>
+            <option value="box">скринька</option>
           </select>
           <button class="btn" type="submit">Додати</button>
         </form>
@@ -833,7 +849,7 @@ main { padding-block: 22px 40px; }
     else if (!next) html = '<span class="goal-text">Балів вистачає на будь-яку нагороду з магазину.</span><div class="goal-bar"><i style="width:100%"></i></div>';
     else {
       const need = next.cost - b; const pct = Math.max(0, Math.min(100, Math.round((Math.max(b, 0) / next.cost) * 100)));
-      html = '<span class="goal-text">До «' + esc(next.title) + '» ще <b>' + need + ' ' + plural(need, BAL) + '</b></span><div class="goal-bar"><i style="width:' + pct + '%"></i></div>';
+      html = '<span class="goal-text">Наступна нагорода: ' + esc(next.title) + ' · ще <b>' + need + ' ' + plural(need, BAL) + '</b></span><div class="goal-bar"><i style="width:' + pct + '%"></i></div>';
     }
     $('#goal').innerHTML = html;
   }
@@ -852,12 +868,12 @@ main { padding-block: 22px 40px; }
         (d.kind === 'abstain' ? num('penalty', 'Штраф за зрив', d.penalty) : num('minutes', 'Таймер, хв', d.minutes, { ph: '—' }));
     } else {
       fields = num('cost', 'Ціна', d.cost, { min: 1, required: true }) +
-        sel('rkind', 'Тип', d.rkind, [['reward', 'нагорода'], ['box', 'сюрприз-скринька']]) +
+        sel('rkind', 'Тип', d.rkind, [['reward', 'нагорода'], ['box', 'скринька']]) +
         num('limit', 'Ліміт', d.limit, { ph: '—' }) +
         sel('limitPeriod', 'за', d.limitPeriod, [['day', 'день'], ['week', 'тиждень']]);
     }
     return '<li class="row" data-id="' + eid + '"><form class="edit-form" data-form="' + type + '-edit" data-id="' + eid + '" autocomplete="off">' +
-      '<input class="field grow" id="e-title-' + eid + '" name="title" value="' + esc(d.title) + '" maxlength="120" required aria-label="Назва">' +
+      '<label class="mini title-f" for="e-title-' + eid + '">Назва<input class="field" id="e-title-' + eid + '" name="title" value="' + esc(d.title) + '" maxlength="120" required></label>' +
       fields +
       '<div class="edit-actions"><button class="btn small" type="submit">Зберегти</button>' +
       '<button class="btn ghost small" type="button" data-act="cancel">Скасувати</button>' +
@@ -1180,7 +1196,10 @@ main { padding-block: 22px 40px; }
         ? { title: src.title, points: src.points, kind: src.kind || 'repeat', penalty: penaltyOf(src), minutes: taskMinutes(Object.assign({}, src, { kind: 'repeat' })) || '' }
         : { title: src.title, cost: src.cost, rkind: src.kind === 'box' ? 'box' : 'reward', limit: Number(src.limit) || '', limitPeriod: src.limitPeriod === 'week' ? 'week' : 'day' } };
       S.armed = null; render();
-      const el = document.getElementById('e-title-' + id); if (el) el.focus();
+      // Keep the form in view; on touch screens don't pop the keyboard until a field is tapped.
+      const form = document.querySelector('.edit-form');
+      if (form) form.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      if (!window.matchMedia('(pointer: coarse)').matches) { const el = document.getElementById('e-title-' + id); if (el) el.focus({ preventScroll: true }); }
     } else if (act === 'cancel') { S.editing = null; S.armed = null; render(); }
     else if (act === 'del') {
       if (!S.editing) return;
