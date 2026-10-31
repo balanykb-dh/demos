@@ -279,6 +279,52 @@ main { padding-block: 22px 40px; }
 
 .foot-note { margin-top: 22px; font-size: 13px; color: var(--muted); max-width: 65ch; }
 
+/* abstain habits (утримання) */
+.slip {
+  flex: 0 0 auto; height: 30px; padding: 0 10px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+}
+.slip:hover { color: var(--danger); border-color: var(--danger); }
+.slip[aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.row.slipped .tick { opacity: .45; }
+.row-meta .bad { color: var(--danger); }
+
+/* timer */
+.link-btn { border: 0; background: none; padding: 0; color: var(--tone); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.link-btn:hover { text-decoration: underline; }
+.timer-left { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+.row.timing { box-shadow: inset 3px 0 0 var(--tone); padding-left: 10px; }
+
+/* labelled number fields in edit forms */
+.edit-form { align-items: flex-end; }
+.mini { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--muted); }
+.mini .field { width: 84px; font-family: var(--f-mono); }
+.mini select.field { width: auto; font-family: var(--f-body); }
+
+/* history: records / stats switch */
+.seg { display: inline-flex; padding: 2px; border-radius: 9px; background: var(--sunk); gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 10px; border-radius: 7px; font-size: 13px; color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+
+/* stats */
+.review { padding: 12px 14px; border-radius: 10px; background: var(--sunk); margin-bottom: 14px; }
+.review-h { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.review-t { white-space: pre-wrap; font-size: 14px; line-height: 1.55; overflow-wrap: anywhere; }
+.review.quiet { color: var(--muted); font-size: 13px; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+.kpi { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.kpi-k { font-size: 12px; color: var(--muted); }
+.kpi-v { font-family: var(--f-mono); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi-s { font-size: 12px; color: var(--muted); }
+.chart-h { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.chart { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; align-items: end; height: 110px; padding-top: 16px; }
+.chart .b { position: relative; background: var(--earn-soft); border-radius: 3px 3px 0 0; min-height: 2px; }
+.chart .b.today { background: var(--earn); }
+.chart .b span { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-family: var(--f-mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+.chart-x { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 4px; margin-top: 4px; font-size: 10px; color: var(--muted); text-align: center; font-family: var(--f-mono); }
+.facts { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* toast */
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%);
@@ -355,6 +401,7 @@ main { padding-block: 22px 40px; }
           <input class="field num" id="taskPoints" type="number" min="1" max="1000" value="10" required aria-label="Бали">
           <select class="field" id="taskKind" aria-label="Тип задачі">
             <option value="daily">щодня</option>
+            <option value="abstain">утримання</option>
             <option value="repeat">багаторазова</option>
             <option value="once">разова</option>
           </select>
@@ -390,14 +437,19 @@ main { padding-block: 22px 40px; }
         <form class="add" id="rewardForm" autocomplete="off" hidden>
           <input class="field grow" id="rewardTitle" placeholder="Нова нагорода" maxlength="120" required aria-label="Назва нагороди">
           <input class="field num" id="rewardCost" type="number" min="1" max="100000" value="50" required aria-label="Ціна в балах">
+          <select class="field" id="rewardKind" aria-label="Тип нагороди">
+            <option value="reward">нагорода</option>
+            <option value="box">сюрприз-скринька</option>
+          </select>
           <button class="btn" type="submit">Додати</button>
         </form>
         <ul class="list" id="rewardList"></ul>
       </section>
 
       <section class="panel" data-panel="history" id="p-history">
-        <div class="p-head"><h2>Історія</h2></div>
+        <div class="p-head"><h2>Історія</h2><div class="seg" role="group" aria-label="Вигляд історії"><button type="button" data-view="log" aria-pressed="true">Записи</button><button type="button" data-view="stats" aria-pressed="false">Статистика</button></div></div>
         <div id="hList"></div>
+        <div id="hStats" hidden></div>
       </section>
     </div>
   </div>
@@ -446,12 +498,15 @@ main { padding-block: 22px 40px; }
   const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
   const nowIso = () => new Date().toISOString();
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  const KIND = { daily: 'щодня', repeat: 'багаторазова', once: 'разова' };
-  const TYPE = { task: 'задача', gratitude: 'вдячність', reward: 'нагорода', adjust: 'корекція', bonus: 'бонус' };
+  const KIND = { daily: 'щодня', abstain: 'утримання', repeat: 'багаторазова', once: 'разова' };
+  const TYPE = { task: 'задача', gratitude: 'вдячність', reward: 'нагорода', adjust: 'корекція', bonus: 'бонус', slip: 'зрив' };
+  // Streak milestones: [days, bonus points].
+  const MILESTONES = [[7, 20], [14, 30], [30, 50], [60, 70], [100, 100], [365, 300]];
+  const WD = ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
   const PEN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10.5 2.5l3 3L5 14H2v-3z"/></svg>';
   const X = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
   const DEF_CFG = { gratitudePoints: 5, gratitudePerDay: 3, carryPoints: 0 };
-  const COLS = ['tasks', 'rewards', 'ledger'];
+  const COLS = ['tasks', 'rewards', 'ledger', 'reviews'];
   const KEY = 'sistema-baliv-v1';
 
   // Where this copy runs: inside claude.ai the shared database is the source of truth;
@@ -462,13 +517,13 @@ main { padding-block: 22px 40px; }
   const S = {
     db: null, dl: null, dbState: IN_VIEWER ? 'connecting' : 'none', netTrouble: false,
     tasks: [], rewards: [], ledger: [], cfg: Object.assign({}, DEF_CFG),
-    editing: null, armed: null, histLimit: 60,
-    loaded: { tasks: false, rewards: false, ledger: false, config: false, tombstones: false }, loadTimer: null, slow: false,
+    editing: null, armed: null, histLimit: 60, histView: 'log',
+    loaded: { tasks: false, rewards: false, ledger: false, reviews: false, config: false, tombstones: false }, loadTimer: null, slow: false,
   };
 
   // ---------- local store: cache + outbox online, the whole record offline ----------
   let storageOk = true;
-  function emptyStore() { return { app: 'sistema-baliv', version: 2, tasks: {}, rewards: {}, ledger: {}, config: { main: Object.assign({}, DEF_CFG) }, tombstones: {}, outbox: [], meta: {} }; }
+  function emptyStore() { return { app: 'sistema-baliv', version: 2, tasks: {}, rewards: {}, ledger: {}, reviews: {}, config: { main: Object.assign({}, DEF_CFG) }, tombstones: {}, outbox: [], meta: {} }; }
   function normalizeStore(s) {
     const L = Object.assign(emptyStore(), s || {});
     COLS.forEach((c) => { if (!L[c] || typeof L[c] !== 'object') L[c] = {}; });
@@ -544,7 +599,7 @@ main { padding-block: 22px 40px; }
       if (op.data) L[col][op.id] = op.data; else delete L[col][op.id];
     });
   }
-  function allLoaded() { const l = S.loaded; return l.tasks && l.rewards && l.ledger && l.config && l.tombstones; }
+  function allLoaded() { const l = S.loaded; return l.tasks && l.rewards && l.ledger && l.reviews && l.config && l.tombstones; }
   function onSnap(col, fromCache) {
     if (!fromCache) S.loaded[col] = true;
     if (allLoaded()) { clearTimeout(S.loadTimer); S.slow = false; }
@@ -557,7 +612,7 @@ main { padding-block: 22px 40px; }
   }
   function subscribe(db) {
     S.loadTimer = setTimeout(() => { if (!allLoaded()) { S.slow = true; renderSync(); } }, 10000);
-    ['tasks', 'rewards', 'ledger', 'tombstones'].forEach((col) => {
+    ['tasks', 'rewards', 'ledger', 'reviews', 'tombstones'].forEach((col) => {
       db.collection(col).onSnapshot((snap) => {
         const m = {}; snap.docs.forEach((d) => { m[d.id] = Object.assign({}, d.data()); });
         applyServer(col, m); onSnap(col, snap.metadata.fromCache);
@@ -630,12 +685,13 @@ main { padding-block: 22px 40px; }
     });
     let cfg = data.config;
     if (cfg && cfg.main) cfg = cfg.main;
-    if (cfg && typeof cfg === 'object' && stamp(cfg) > stamp(L.config.main)) { put('config', 'main', Object.assign({}, DEF_CFG, cfg), { keepStamp: true }); changed++; }
+    // A local config nobody has edited yet (no stamp) takes the incoming one as is.
+    if (cfg && typeof cfg === 'object' && (!stamp(L.config.main) || stamp(cfg) > stamp(L.config.main))) { put('config', 'main', Object.assign({}, DEF_CFG, cfg), { keepStamp: true }); changed++; }
     return changed;
   }
   function exportData() {
     const arr = (m) => Object.keys(m).map((id) => Object.assign({ id }, m[id]));
-    return { app: 'sistema-baliv', version: 2, exportedAt: nowIso(), from: MODE, config: L.config.main, tasks: arr(L.tasks), rewards: arr(L.rewards), ledger: arr(L.ledger), tombstones: Object.assign({}, L.tombstones) };
+    return { app: 'sistema-baliv', version: 2, exportedAt: nowIso(), from: MODE, config: L.config.main, tasks: arr(L.tasks), rewards: arr(L.rewards), ledger: arr(L.ledger), reviews: arr(L.reviews), tombstones: Object.assign({}, L.tombstones) };
   }
 
   // ---------- derived ----------
@@ -667,11 +723,87 @@ main { padding-block: 22px 40px; }
     return { text: '', nudge: false };
   }
 
+  // ---------- streak milestones ----------
+  // A bonus is tied to the run it was earned in (run = first day of the current streak), so its id
+  // is the same on every device and merging never duplicates it. If today's entries are undone and
+  // the run falls below a milestone, that run's bonus is taken back; later runs earn their own.
+  function currentRun() {
+    const days = new Set(Object.keys(L.ledger).map((id) => L.ledger[id]).filter(keepsStreak).map(entryDay));
+    const today = dayKey(); let k = days.has(today) ? today : addDays(today, -1);
+    let n = 0, start = null; while (days.has(k)) { n++; start = k; k = addDays(k, -1); }
+    return { n, start };
+  }
+  function checkMilestones() {
+    const run = currentRun(); const won = [];
+    Object.keys(L.ledger).forEach((id) => {
+      const e = L.ledger[id];
+      if (e.type === 'bonus' && e.run && e.run === run.start && Number(e.milestone) > run.n) put('ledger', id, null);
+    });
+    if (run.n) MILESTONES.forEach(([m, pts]) => {
+      if (run.n < m) return;
+      const id = 'bonus-streak-' + m + '-' + run.start;
+      if (L.ledger[id]) return;
+      const now = new Date();
+      put('ledger', id, { type: 'bonus', title: 'Серія ' + m + ' ' + plural(m, DAYS), points: pts, refId: 'streak', milestone: m, run: run.start, at: now.toISOString(), day: dayKey(now) });
+      won.push([m, pts]);
+    });
+    return won;
+  }
+  const milestoneText = (won) => { const w = won[won.length - 1]; return 'Серія ' + w[0] + ' ' + plural(w[0], DAYS) + '! Бонус +' + w[1]; };
+
+  // ---------- task helpers ----------
+  // Minutes for the timer: an explicit field wins (0 switches it off), otherwise "25 хвилин" in the title.
+  function taskMinutes(t) {
+    if (!t || t.kind === 'abstain') return 0;
+    if (t.minutes != null && t.minutes !== '') return Math.max(0, Math.round(Number(t.minutes) || 0));
+    const m = /(\d{1,3})\s*(?:хв|хвилин)/i.exec(String(t.title || ''));
+    return m ? Number(m[1]) : 0;
+  }
+  const penaltyOf = (t) => (t.penalty != null && t.penalty !== '' ? Math.max(0, Math.round(Number(t.penalty) || 0)) : Number(t.points) || 0);
+  function todaysEntries(type, refId) {
+    const today = dayKey();
+    return Object.keys(L.ledger).filter((k) => { const e = L.ledger[k]; return e.type === type && e.refId === refId && entryDay(e) === today; });
+  }
+
+  // ---------- reward helpers ----------
+  function weekStartKey(k) { const d = keyToDate(k); return addDays(k, -((d.getDay() + 6) % 7)); }
+  function limitInfo(r) {
+    const limit = Math.max(0, Math.round(Number(r.limit) || 0));
+    if (!limit) return { limit: 0, used: 0, reached: false };
+    const period = r.limitPeriod === 'week' ? 'week' : 'day';
+    const today = dayKey(); const from = period === 'week' ? weekStartKey(today) : today;
+    const used = S.ledger.filter((e) => e.type === 'reward' && (e.refId === r.id || e.prizeId === r.id) && entryDay(e) >= from && entryDay(e) <= today).length;
+    return { limit, period, used, reached: used >= limit };
+  }
+  // A surprise box draws one reward costing up to twice its price; cheaper ones come up more often.
+  function boxPool(box) {
+    const cap = (Number(box.cost) || 0) * 2;
+    return S.rewards.filter((x) => !x.archived && x.kind !== 'box' && (Number(x.cost) || 0) <= cap && !limitInfo(x).reached);
+  }
+  function pickWeighted(pool) {
+    const w = pool.map((x) => 1 / Math.max(1, Number(x.cost) || 1)); let r = Math.random() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) return pool[i]; }
+    return pool[pool.length - 1];
+  }
+
+  // ---------- timer (kept per device) ----------
+  const TIMER_KEY = 'sistema-baliv-timer';
+  let TIMER = null; let wakeLock = null;
+  try { TIMER = JSON.parse(localStorage.getItem(TIMER_KEY) || 'null'); } catch (e) { TIMER = null; }
+  function saveTimer() { try { if (TIMER) localStorage.setItem(TIMER_KEY, JSON.stringify(TIMER)); else localStorage.removeItem(TIMER_KEY); } catch (e) {} }
+  function fmtLeft() { const s = Math.ceil(Math.max(0, TIMER.endsAt - Date.now()) / 1000); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); }
+  async function keepAwake(on) {
+    try {
+      if (on && !wakeLock && navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen');
+      if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+    } catch (e) { wakeLock = null; }
+  }
+
   // ---------- render ----------
   function render() {
     const ae = document.activeElement; const fid = ae && ae.id; let sel = null;
     try { if (ae && ae.selectionStart != null) sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) {}
-    renderTop(); renderTasks(); renderGratitude(); renderShop(); renderHistory(); renderSync();
+    renderTop(); renderTasks(); renderGratitude(); renderShop(); renderHistory(); renderStats(); renderSync();
     if (fid) {
       const el = document.getElementById(fid);
       if (el && el !== document.activeElement) {
@@ -694,7 +826,7 @@ main { padding-block: 22px 40px; }
     const tsub = streakSub(ts); const subEl = $('#taskStreakSub');
     subEl.textContent = tsub.text; subEl.hidden = !tsub.text; subEl.classList.toggle('nudge', tsub.nudge);
     $('#taskDays').title = 'Останні 7 днів: зараховується день із задачею або вдячністю';
-    const rewards = S.rewards.filter((r) => !r.archived).sort((a, b2) => a.cost - b2.cost);
+    const rewards = S.rewards.filter((r) => !r.archived && r.kind !== 'box' && !limitInfo(r).reached).sort((a, b2) => a.cost - b2.cost);
     const next = rewards.find((r) => r.cost > b);
     let html;
     if (!rewards.length) html = '<span class="goal-text">Додай нагороди в магазин, і тут зʼявиться найближча ціль.</span>';
@@ -707,11 +839,26 @@ main { padding-block: 22px 40px; }
   }
 
   function editFormHTML(type, id) {
-    const d = S.editing.draft; const isTask = type === 'task'; const armed = S.armed === 'del:' + id;
-    return '<li class="row" data-id="' + esc(id) + '"><form class="edit-form" data-form="' + type + '-edit" data-id="' + esc(id) + '" autocomplete="off">' +
-      '<input class="field grow" id="e-title-' + esc(id) + '" name="title" value="' + esc(d.title) + '" maxlength="120" required aria-label="Назва">' +
-      '<input class="field num" id="e-num-' + esc(id) + '" name="' + (isTask ? 'points' : 'cost') + '" type="number" min="1" max="100000" value="' + esc(isTask ? d.points : d.cost) + '" required aria-label="' + (isTask ? 'Бали' : 'Ціна') + '">' +
-      (isTask ? '<select class="field" id="e-kind-' + esc(id) + '" name="kind">' + Object.keys(KIND).map((k) => '<option value="' + k + '"' + (d.kind === k ? ' selected' : '') + '>' + KIND[k] + '</option>').join('') + '</select>' : '') +
+    const d = S.editing.draft; const isTask = type === 'task'; const armed = S.armed === 'del:' + id; const eid = esc(id);
+    const num = (name, label, value, opts) => '<label class="mini" for="e-' + name + '-' + eid + '">' + label +
+      '<input class="field" id="e-' + name + '-' + eid + '" name="' + name + '" type="number" min="' + ((opts && opts.min) || 0) + '" max="100000" value="' + esc(value) + '"' +
+      (opts && opts.required ? ' required' : '') + (opts && opts.ph ? ' placeholder="' + opts.ph + '"' : '') + '></label>';
+    const sel = (name, label, value, options) => '<label class="mini" for="e-' + name + '-' + eid + '">' + label +
+      '<select class="field" id="e-' + name + '-' + eid + '" name="' + name + '">' + options.map((o) => '<option value="' + o[0] + '"' + (value === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select></label>';
+    let fields;
+    if (isTask) {
+      fields = num('points', 'Бали', d.points, { min: 1, required: true }) +
+        sel('kind', 'Тип', d.kind, Object.keys(KIND).map((k) => [k, KIND[k]])) +
+        (d.kind === 'abstain' ? num('penalty', 'Штраф за зрив', d.penalty) : num('minutes', 'Таймер, хв', d.minutes, { ph: '—' }));
+    } else {
+      fields = num('cost', 'Ціна', d.cost, { min: 1, required: true }) +
+        sel('rkind', 'Тип', d.rkind, [['reward', 'нагорода'], ['box', 'сюрприз-скринька']]) +
+        num('limit', 'Ліміт', d.limit, { ph: '—' }) +
+        sel('limitPeriod', 'за', d.limitPeriod, [['day', 'день'], ['week', 'тиждень']]);
+    }
+    return '<li class="row" data-id="' + eid + '"><form class="edit-form" data-form="' + type + '-edit" data-id="' + eid + '" autocomplete="off">' +
+      '<input class="field grow" id="e-title-' + eid + '" name="title" value="' + esc(d.title) + '" maxlength="120" required aria-label="Назва">' +
+      fields +
       '<div class="edit-actions"><button class="btn small" type="submit">Зберегти</button>' +
       '<button class="btn ghost small" type="button" data-act="cancel">Скасувати</button>' +
       '<button class="btn danger small" type="button" data-act="del">' + (armed ? 'Точно видалити?' : 'Видалити') + '</button></div>' +
@@ -719,10 +866,14 @@ main { padding-block: 22px 40px; }
   }
 
   function renderTasks() {
-    const today = dayKey(); const countToday = {};
-    S.ledger.forEach((e) => { if (e.type === 'task' && e.refId && entryDay(e) === today) countToday[e.refId] = (countToday[e.refId] || 0) + 1; });
+    const today = dayKey(); const countToday = {}; const slipToday = {};
+    S.ledger.forEach((e) => {
+      if (!e.refId || entryDay(e) !== today) return;
+      if (e.type === 'task') countToday[e.refId] = (countToday[e.refId] || 0) + 1;
+      if (e.type === 'slip') slipToday[e.refId] = true;
+    });
     const active = S.tasks.filter((t) => !t.archived && !(t.kind === 'once' && t.doneAt));
-    const groups = [['daily', 'Щоденні'], ['repeat', 'Багаторазові'], ['once', 'Разові']];
+    const groups = [['daily', 'Щоденні'], ['abstain', 'Утримання'], ['repeat', 'Багаторазові'], ['once', 'Разові']];
     let html = '';
     groups.forEach(([kind, label]) => {
       const items = active.filter((t) => (t.kind || 'repeat') === kind).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
@@ -730,13 +881,25 @@ main { padding-block: 22px 40px; }
       html += '<li class="group-h">' + label + '</li>';
       items.forEach((t) => {
         if (S.editing && S.editing.type === 'task' && S.editing.id === t.id) { html += editFormHTML('task', t.id); return; }
-        const n = countToday[t.id] || 0; const done = kind === 'daily' && n > 0;
-        let meta = '';
-        if (kind === 'daily' && done) meta = 'виконано сьогодні';
-        if (kind === 'repeat' && n) meta = 'сьогодні ×' + n;
-        html += '<li class="row" data-id="' + esc(t.id) + '">' +
-          '<button class="tick" type="button" data-act="complete" aria-pressed="' + done + '" title="' + (done ? 'Скасувати сьогоднішнє виконання' : 'Позначити виконаною') + '">' + (done ? '✓ ' : '+') + (Number(t.points) || 0) + '</button>' +
-          '<div class="row-main"><div class="row-title">' + esc(t.title) + (t.example ? ' <span class="chip">приклад</span>' : '') + '</div>' + (meta ? '<div class="row-meta">' + meta + '</div>' : '') + '</div>' +
+        const n = countToday[t.id] || 0; const pts = Number(t.points) || 0;
+        const slipped = kind === 'abstain' && !!slipToday[t.id];
+        const done = (kind === 'daily' || kind === 'abstain') && n > 0;
+        const meta = [];
+        if (kind === 'daily' && done) meta.push('виконано сьогодні');
+        if (kind === 'abstain' && done) meta.push('сьогодні без зриву');
+        if (slipped) meta.push('<span class="bad">зрив сьогодні · −' + penaltyOf(t) + '</span>');
+        if (kind === 'repeat' && n) meta.push('сьогодні ×' + n);
+        const mins = taskMinutes(t); const timing = !!(TIMER && TIMER.taskId === t.id);
+        if (mins && !done) meta.push(timing
+          ? 'залишилось <span class="timer-left" id="timerLeft">' + fmtLeft() + '</span> · <button class="link-btn" type="button" data-act="timer-stop">стоп</button>'
+          : '<button class="link-btn" type="button" data-act="timer">▸ таймер ' + mins + ' хв</button>');
+        const tickTitle = kind === 'abstain'
+          ? (done ? 'Скасувати відмітку' : 'Сьогодні без зриву')
+          : (done ? 'Скасувати сьогоднішнє виконання' : 'Позначити виконаною');
+        html += '<li class="row' + (slipped ? ' slipped' : '') + (timing ? ' timing' : '') + '" data-id="' + esc(t.id) + '">' +
+          '<button class="tick" type="button" data-act="complete" aria-pressed="' + done + '" title="' + tickTitle + '">' + (done ? '✓ ' : '+') + pts + '</button>' +
+          '<div class="row-main"><div class="row-title">' + esc(t.title) + (t.example ? ' <span class="chip">приклад</span>' : '') + '</div>' + (meta.length ? '<div class="row-meta">' + meta.join(' · ') + '</div>' : '') + '</div>' +
+          (kind === 'abstain' ? '<button class="slip" type="button" data-act="slip" aria-pressed="' + slipped + '" title="' + (slipped ? 'Скасувати зрив' : 'Зірвався: −' + penaltyOf(t)) + '">зрив</button>' : '') +
           '<button class="icon-btn" type="button" data-act="edit-task" aria-label="Змінити задачу">' + PEN + '</button></li>';
       });
     });
@@ -767,11 +930,19 @@ main { padding-block: 22px 40px; }
           if (S.editing && S.editing.type === 'reward' && S.editing.id === r.id) return editFormHTML('reward', r.id);
           const cost = Number(r.cost) || 0; const ok = b >= cost; const need = cost - b;
           const pct = cost ? Math.max(0, Math.min(100, Math.round((Math.max(b, 0) / cost) * 100))) : 100;
+          const li = limitInfo(r); const isBox = r.kind === 'box'; const pool = isBox ? boxPool(r) : [];
+          const can = ok && !li.reached && (!isBox || pool.length > 0);
+          let note;
+          if (li.reached) note = 'ліміт ' + (li.period === 'week' ? 'на тиждень' : 'на сьогодні') + ' вичерпано';
+          else if (isBox && !pool.length) note = 'немає нагород до ' + cost * 2 + ' балів';
+          else if (!ok) note = 'ще ' + need + ' ' + plural(need, BAL);
+          else note = isBox ? 'Можна взяти · випаде одна з ' + pool.length : 'Можна взяти';
+          if (li.limit && !li.reached) note += ' · ' + li.used + '/' + li.limit + (li.period === 'week' ? ' за тиждень' : ' сьогодні');
           return '<li class="reward" data-id="' + esc(r.id) + '">' +
-            '<div class="r-top"><span class="r-title">' + esc(r.title) + (r.example ? ' <span class="chip">приклад</span>' : '') + '</span><span class="r-cost">' + cost + '</span></div>' +
+            '<div class="r-top"><span class="r-title">' + esc(r.title) + (isBox ? ' <span class="chip">сюрприз</span>' : '') + (r.example ? ' <span class="chip">приклад</span>' : '') + '</span><span class="r-cost">' + cost + '</span></div>' +
             '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
-            '<div class="r-foot"><span class="r-need' + (ok ? ' ok' : '') + '">' + (ok ? 'Можна взяти' : 'ще ' + need + ' ' + plural(need, BAL)) + '</span>' +
-            '<button class="btn small" type="button" data-act="buy"' + (ok ? '' : ' disabled title="Ще не вистачає балів"') + '>Взяти</button>' +
+            '<div class="r-foot"><span class="r-need' + (can ? ' ok' : '') + '">' + note + '</span>' +
+            '<button class="btn small" type="button" data-act="buy"' + (can ? '' : ' disabled') + '>' + (isBox ? 'Відкрити' : 'Взяти') + '</button>' +
             '<button class="icon-btn" type="button" data-act="edit-reward" aria-label="Змінити нагороду">' + PEN + '</button></div></li>';
         }).join('')
       : '<li class="empty">Магазин порожній. Додай те, що радує і не шкодить.</li>';
@@ -794,11 +965,66 @@ main { padding-block: 22px 40px; }
         '<span class="h-time">' + (e.at ? fmtTime.format(new Date(e.at)) : '') + '</span>' +
         '<span class="h-title"><span class="chip">' + esc(TYPE[e.type] || e.type || 'запис') + '</span> ' + esc(title) + '</span>' +
         '<span class="h-pts ' + (p > 0 ? 'plus' : p < 0 ? 'minus' : 'zero') + '">' + (p ? signed(p) : '0') + '</span>' +
-        '<button class="icon-btn' + (armed ? ' armed' : '') + '" type="button" data-act="undo" aria-label="Скасувати запис">' + (armed ? 'Видалити?' : X) + '</button></div>';
+        (e.type === 'bonus'
+          ? '<span></span>' // bonuses follow the streak itself, so they are not removed by hand
+          : '<button class="icon-btn' + (armed ? ' armed' : '') + '" type="button" data-act="undo" aria-label="Скасувати запис">' + (armed ? 'Видалити?' : X) + '</button>') + '</div>';
     });
     if (S.ledger.length > S.histLimit) html += '<button class="btn ghost small more" type="button" data-act="more">Показати ще</button>';
     if (!html) html = '<div class="empty">Історія порожня. Виконай задачу або запиши вдячність, і тут зʼявиться перший запис.</div>';
     $('#hList').innerHTML = html;
+  }
+
+  function renderStats() {
+    const box = $('#hStats');
+    $('#hList').hidden = S.histView !== 'log'; box.hidden = S.histView !== 'stats';
+    document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === S.histView)));
+    if (box.hidden) return;
+    const today = dayKey(); const wk = weekStartKey(today); const lastWk = addDays(wk, -7);
+    let thisPlus = 0, thisMinus = 0, lastPlus = 0, totalPlus = 0, totalMinus = 0; const byDay = {};
+    S.ledger.forEach((e) => {
+      const d = entryDay(e); const p = Number(e.points) || 0;
+      if (p > 0) { totalPlus += p; byDay[d] = (byDay[d] || 0) + p; } else totalMinus += p;
+      if (d >= wk && d <= today) { if (p > 0) thisPlus += p; else thisMinus += p; }
+      else if (d >= lastWk && d < wk && p > 0) lastPlus += p;
+    });
+    // Daily habits over the last 7 finished days (today is still open, so it is left out).
+    const dailies = S.tasks.filter((t) => !t.archived && (t.kind === 'daily' || t.kind === 'abstain'));
+    const doneSet = new Set(S.ledger.filter((e) => e.type === 'task').map((e) => e.refId + '|' + entryDay(e)));
+    let possible = 0, done = 0;
+    for (let i = 1; i <= 7; i++) {
+      const d = addDays(today, -i);
+      dailies.forEach((t) => { const c = t.createdAt ? dayKey(new Date(t.createdAt)) : ''; if (c && c > d) return; possible++; if (doneSet.has(t.id + '|' + d)) done++; });
+    }
+    const g7 = S.ledger.filter((e) => e.type === 'gratitude' && entryDay(e) > addDays(today, -7)).length;
+    const st = streakOf(keepsStreak);
+    const days = []; for (let i = 13; i >= 0; i--) days.push(addDays(today, -i));
+    const max = Math.max(10, ...days.map((d) => byDay[d] || 0));
+    const bars = days.map((d) => {
+      const v = byDay[d] || 0;
+      return '<div class="b' + (d === today ? ' today' : '') + '" style="height:' + Math.max(2, Math.round((v / max) * 100)) + '%" title="' + fmtDay.format(keyToDate(d)) + ': +' + v + '">' + (v ? '<span>' + v + '</span>' : '') + '</div>';
+    }).join('');
+    const xs = days.map((d) => '<span>' + WD[keyToDate(d).getDay()] + '</span>').join('');
+    let best = null; Object.keys(byDay).forEach((d) => { if (!best || byDay[d] > byDay[best]) best = d; });
+    const reviews = Object.keys(L.reviews || {}).map((id) => Object.assign({ id }, L.reviews[id]))
+      .sort((a, b) => String(b.to || b.createdAt || '').localeCompare(String(a.to || a.createdAt || '')));
+    const rv = reviews[0];
+    const rvRange = rv && rv.from && rv.to ? ' · ' + fmtDay.format(keyToDate(rv.from)) + ' – ' + fmtDay.format(keyToDate(rv.to)) : '';
+    const kpi = (k, v, s) => '<div class="kpi"><div class="kpi-k">' + k + '</div><div class="kpi-v">' + v + '</div>' + (s ? '<div class="kpi-s">' + s + '</div>' : '') + '</div>';
+    box.innerHTML =
+      (rv ? '<div class="review"><div class="review-h">Підсумок тижня від Claude' + rvRange + '</div><div class="review-t">' + esc(rv.text) + '</div></div>'
+          : '<div class="review quiet">Щонеділі ввечері тут зʼявлятиметься короткий підсумок тижня від Claude.</div>') +
+      '<div class="kpis">' +
+        kpi('Цей тиждень', '+' + thisPlus, (thisMinus ? '−' + Math.abs(thisMinus) + ' · ' : '') + 'минулий +' + lastPlus) +
+        kpi('Щоденні за 7 днів', possible ? Math.round((done / possible) * 100) + '%' : '—', possible ? done + ' з ' + possible : 'ще мало даних') +
+        kpi('Серія', st.n + ' ' + plural(st.n, DAYS), 'рекорд ' + st.best) +
+        kpi('Вдячність за 7 днів', String(g7), plural(g7, RECS)) +
+      '</div>' +
+      '<div class="chart-h">Зароблено за 14 днів</div>' +
+      '<div class="chart">' + bars + '</div><div class="chart-x">' + xs + '</div>' +
+      '<div class="facts">' +
+        (best ? '<div>Найкращий день: <b>' + fmtDay.format(keyToDate(best)) + ', +' + byDay[best] + '</b></div>' : '') +
+        '<div>Усього зароблено <b>+' + totalPlus + '</b>, витрачено <b>−' + Math.abs(totalMinus) + '</b></div>' +
+      '</div>';
   }
 
   function renderSync() {
@@ -843,36 +1069,80 @@ main { padding-block: 22px 40px; }
     put('ledger', id, Object.assign({ at: now.toISOString(), day: dayKey(now) }, fields));
     return id;
   }
-  function removeEntry(id) {
-    const e = L.ledger[id];
+  function dropEntry(id) {
+    const e = L.ledger[id]; if (!e) return;
     put('ledger', id, null);
-    if (e && e.type === 'task' && e.refId) {
+    if (e.type === 'task' && e.refId) {
       const t = L.tasks[e.refId];
       if (t && t.kind === 'once' && t.doneAt) put('tasks', e.refId, Object.assign({}, t, { doneAt: null }));
     }
-    commit();
   }
-  function completeTask(id) {
+  function removeEntry(id) { dropEntry(id); checkMilestones(); commit(); }
+  function completeTask(id, opts) {
+    opts = opts || {};
     const t = L.tasks[id]; if (!t) return;
-    const today = dayKey();
-    if (t.kind === 'daily') {
-      const ex = S.ledger.find((e) => e.type === 'task' && e.refId === id && entryDay(e) === today);
-      if (ex) { removeEntry(ex.id); return; }
+    const kind = t.kind || 'repeat';
+    if (kind === 'daily' || kind === 'abstain') {
+      const held = todaysEntries('task', id);
+      if (held.length) {
+        if (opts.fromTimer) return;
+        held.forEach(dropEntry); checkMilestones(); commit(); return;
+      }
+      if (kind === 'abstain') todaysEntries('slip', id).forEach(dropEntry);
     }
+    if (TIMER && TIMER.taskId === id) { TIMER = null; saveTimer(); keepAwake(false); }
     const pts = Number(t.points) || 0;
     const entryId = addEntry({ type: 'task', title: t.title, points: pts, refId: id });
-    if (t.kind === 'once') put('tasks', id, Object.assign({}, t, { doneAt: nowIso() }));
-    commit();
-    toast('+' + pts + ' за «' + t.title + '»', () => removeEntry(entryId));
+    if (kind === 'once') put('tasks', id, Object.assign({}, t, { doneAt: nowIso() }));
+    const won = checkMilestones(); commit();
+    toast(won.length ? milestoneText(won) : (opts.fromTimer ? 'Час вийшов. ' : '') + '+' + pts + ' за «' + t.title + '»', () => removeEntry(entryId));
+  }
+  // Abstain habit: "зрив" replaces today's "held" mark with a penalty; pressing it again takes the penalty back.
+  function slipTask(id) {
+    const t = L.tasks[id]; if (!t) return;
+    const slips = todaysEntries('slip', id);
+    if (slips.length) { slips.forEach(dropEntry); checkMilestones(); commit(); return; }
+    todaysEntries('task', id).forEach(dropEntry);
+    const pen = penaltyOf(t);
+    const entryId = addEntry({ type: 'slip', title: 'Зрив: ' + t.title, points: -pen, refId: id });
+    checkMilestones(); commit();
+    toast('Записав зрив' + (pen ? ': −' + pen : '') + '. Завтра новий день.', () => removeEntry(entryId));
   }
   function buy(id) {
     const r = L.rewards[id]; if (!r) return;
     const cost = Number(r.cost) || 0;
-    if (balance() < cost) return;
+    if (balance() < cost || limitInfo(r).reached) return;
+    if (r.kind === 'box') {
+      const pool = boxPool(r); if (!pool.length) return;
+      const prize = pickWeighted(pool);
+      const boxEntry = addEntry({ type: 'reward', title: 'Сюрприз: ' + prize.title, points: -cost, refId: id, prizeId: prize.id });
+      commit();
+      toast('Випало: «' + prize.title + '»', () => removeEntry(boxEntry));
+      return;
+    }
     const entryId = addEntry({ type: 'reward', title: r.title, points: -cost, refId: id });
     commit();
     toast('Нагорода «' + r.title + '» твоя. −' + cost, () => removeEntry(entryId));
   }
+  function startTimer(id) {
+    const m = taskMinutes(L.tasks[id]); if (!m) return;
+    TIMER = { taskId: id, endsAt: Date.now() + m * 60000, minutes: m }; saveTimer(); keepAwake(true); render();
+  }
+  function stopTimer() { TIMER = null; saveTimer(); keepAwake(false); render(); }
+  function tickTimer() {
+    if (!TIMER) return;
+    const ready = MODE === 'offline' || allLoaded();
+    if (ready && !L.tasks[TIMER.taskId]) { stopTimer(); return; }
+    if (Date.now() >= TIMER.endsAt) {
+      if (!ready) return; // wait for the data before crediting the task
+      const id = TIMER.taskId; TIMER = null; saveTimer(); keepAwake(false);
+      completeTask(id, { fromTimer: true }); render();
+      return;
+    }
+    const el = document.getElementById('timerLeft'); if (el) el.textContent = fmtLeft();
+  }
+  setInterval(tickTimer, 1000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { tickTimer(); if (TIMER) keepAwake(true); } });
 
   // ---------- events ----------
   // "+ Додати" opens the add form; it stays open for several items until "Готово".
@@ -894,14 +1164,21 @@ main { padding-block: 22px 40px; }
       if (open) { const inp = f.querySelector('input'); if (inp) inp.focus(); }
       return;
     }
+    const view = ev.target.closest('[data-view]');
+    if (view) { S.histView = view.dataset.view; render(); return; }
     const b = ev.target.closest('[data-act]'); if (!b) return;
     const act = b.dataset.act; const holder = b.closest('[data-id]'); const id = holder && holder.dataset.id;
     if (act === 'complete') completeTask(id);
+    else if (act === 'slip') slipTask(id);
+    else if (act === 'timer') startTimer(id);
+    else if (act === 'timer-stop') stopTimer();
     else if (act === 'buy') buy(id);
     else if (act === 'edit-task' || act === 'edit-reward') {
       const type = act === 'edit-task' ? 'task' : 'reward';
       const src = type === 'task' ? L.tasks[id] : L.rewards[id]; if (!src) return;
-      S.editing = { type, id, draft: { title: src.title, points: src.points, cost: src.cost, kind: src.kind || 'repeat' } };
+      S.editing = { type, id, draft: type === 'task'
+        ? { title: src.title, points: src.points, kind: src.kind || 'repeat', penalty: penaltyOf(src), minutes: taskMinutes(Object.assign({}, src, { kind: 'repeat' })) || '' }
+        : { title: src.title, cost: src.cost, rkind: src.kind === 'box' ? 'box' : 'reward', limit: Number(src.limit) || '', limitPeriod: src.limitPeriod === 'week' ? 'week' : 'day' } };
       S.armed = null; render();
       const el = document.getElementById('e-title-' + id); if (el) el.focus();
     } else if (act === 'cancel') { S.editing = null; S.armed = null; render(); }
@@ -925,6 +1202,7 @@ main { padding-block: 22px 40px; }
   document.addEventListener('input', (ev) => {
     const f = ev.target.closest('.edit-form'); if (!f || !S.editing) return;
     const n = ev.target.name; if (n) S.editing.draft[n] = ev.target.value;
+    if (n === 'kind') render(); // abstain swaps the timer field for the penalty field
   });
 
   document.addEventListener('submit', (ev) => {
@@ -935,8 +1213,17 @@ main { padding-block: 22px 40px; }
     const id = f.dataset.id; const title = String(d.title || '').trim(); if (!title) return;
     const col = kind === 'task-edit' ? 'tasks' : 'rewards'; const cur = L[col][id]; if (!cur) return;
     let patch;
-    if (col === 'tasks') { const pts = Math.round(Number(d.points)); if (!(pts >= 1)) return; patch = { title, points: pts, kind: d.kind, example: false }; }
-    else { const cost = Math.round(Number(d.cost)); if (!(cost >= 1)) return; patch = { title, cost, example: false }; }
+    const whole = (v) => Math.max(0, Math.round(Number(v) || 0));
+    if (col === 'tasks') {
+      const pts = Math.round(Number(d.points)); if (!(pts >= 1)) return;
+      patch = { title, points: pts, kind: d.kind, example: false };
+      if (d.kind === 'abstain') patch.penalty = whole(d.penalty);
+      else patch.minutes = whole(d.minutes);
+      if (d.kind !== 'once') patch.doneAt = null;
+    } else {
+      const cost = Math.round(Number(d.cost)); if (!(cost >= 1)) return;
+      patch = { title, cost, kind: d.rkind === 'box' ? 'box' : 'reward', limit: whole(d.limit), limitPeriod: d.limitPeriod === 'week' ? 'week' : 'day', example: false };
+    }
     S.editing = null; S.armed = null;
     put(col, id, Object.assign({}, cur, patch)); commit(); toast('Збережено');
   });
@@ -945,7 +1232,9 @@ main { padding-block: 22px 40px; }
     ev.preventDefault();
     const title = $('#taskTitle').value.trim(); const pts = Math.round(Number($('#taskPoints').value)); const kind = $('#taskKind').value;
     if (!title || !(pts >= 1)) return;
-    put('tasks', uid(), { title, points: pts, kind, archived: false, createdAt: nowIso() }); commit();
+    const doc = { title, points: pts, kind, archived: false, createdAt: nowIso() };
+    if (kind === 'abstain') doc.penalty = pts;
+    put('tasks', uid(), doc); commit();
     $('#taskTitle').value = ''; $('#taskTitle').focus();
   });
 
@@ -953,7 +1242,7 @@ main { padding-block: 22px 40px; }
     ev.preventDefault();
     const title = $('#rewardTitle').value.trim(); const cost = Math.round(Number($('#rewardCost').value));
     if (!title || !(cost >= 1)) return;
-    put('rewards', uid(), { title, cost, archived: false, createdAt: nowIso() }); commit();
+    put('rewards', uid(), { title, cost, kind: $('#rewardKind').value === 'box' ? 'box' : 'reward', archived: false, createdAt: nowIso() }); commit();
     $('#rewardTitle').value = ''; $('#rewardTitle').focus();
   });
 
@@ -964,9 +1253,9 @@ main { padding-block: 22px 40px; }
     const paid = gratitudeToday().filter((e) => (Number(e.points) || 0) > 0).length;
     const award = paid < max ? pts : 0;
     const entryId = addEntry({ type: 'gratitude', title: 'Запис вдячності', text, points: award });
-    commit();
+    const won = checkMilestones(); commit();
     $('#gText').value = '';
-    toast(award ? 'Записано. +' + award : 'Записано без балів: денний ліміт вичерпано', () => removeEntry(entryId));
+    toast(won.length ? milestoneText(won) : award ? 'Записано. +' + award : 'Записано без балів: денний ліміт вичерпано', () => removeEntry(entryId));
   });
 
   $('#cfgForm').addEventListener('submit', (ev) => {
