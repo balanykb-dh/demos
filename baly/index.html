@@ -1,0 +1,1102 @@
+<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#15202E"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Бали"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon.svg" type="image/svg+xml"><style>:root{padding-top:0!important}.top{padding-top:env(safe-area-inset-top,0px)}body::before{background:var(--band)!important}</style></head><body><title>Система балів</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: a dark ledger band with the balance on top, then a two-column board (earn on the left, spend and record on the right); tabs at phone width. One source runs online (claude.ai, shared db) and as a local file (browser storage). */
+:root {
+  --bg: #EDF0F4;
+  --surface: #FFFFFF;
+  --sunk: #E4E9EF;
+  --ink: #15202E;
+  --muted: #5A6778;
+  --line: #D4DBE4;
+  --brass: #9C6410;
+  --earn: #2A7548;
+  --earn-soft: #DCEEE2;
+  --spend: #3A59A6;
+  --spend-soft: #E0E7F6;
+  --warm: #A8405A;
+  --warm-soft: #F5E0E5;
+  --danger: #B3352C;
+  --band: #15202E;
+  --band-ink: #F0F3F7;
+  --band-muted: #9AA8BA;
+  --band-accent: #F0B54E;
+  --band-track: #2C3A4C;
+  --ok: #6FD39C;
+  --wait: #F0B54E;
+  --off: #9AA8BA;
+  --f-display: "Unbounded", "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-body: "Golos Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E141C; --surface: #161F2A; --sunk: #1D2834; --ink: #E6EBF1; --muted: #93A1B3; --line: #283442;
+    --brass: #E0A445; --earn: #62C28E; --earn-soft: #15301F; --spend: #93ABEC; --spend-soft: #1B2742;
+    --warm: #E68DA3; --warm-soft: #3A1D26; --danger: #F08378;
+    --band: #1A2431; --band-ink: #F0F3F7; --band-muted: #93A1B3; --band-accent: #F0B54E; --band-track: #2C3A4C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E141C; --surface: #161F2A; --sunk: #1D2834; --ink: #E6EBF1; --muted: #93A1B3; --line: #283442;
+  --brass: #E0A445; --earn: #62C28E; --earn-soft: #15301F; --spend: #93ABEC; --spend-soft: #1B2742;
+  --warm: #E68DA3; --warm-soft: #3A1D26; --danger: #F08378;
+  --band: #1A2431; --band-ink: #F0F3F7; --band-muted: #93A1B3; --band-accent: #F0B54E; --band-track: #2C3A4C;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; background: var(--bg); }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10;
+  background: var(--bg);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--spend); outline-offset: 2px; }
+
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* ---------- Balance band ---------- */
+.top { background: var(--band); color: var(--band-ink); }
+.top-inner {
+  padding-block: 26px 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 18px 40px;
+  align-items: end;
+}
+.brand { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; }
+.eyebrow {
+  font-family: var(--f-display); font-weight: 500; font-size: 13px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--band-accent);
+}
+.brand-right { display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: baseline; }
+.date { font-size: 13px; color: var(--band-muted); }
+.sync { font-size: 13px; color: var(--band-muted); display: inline-flex; align-items: center; gap: 6px; }
+.sync::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--sync-dot, var(--off)); }
+.sync[data-state="ok"] { --sync-dot: var(--ok); }
+.sync[data-state="wait"] { --sync-dot: var(--wait); color: var(--band-ink); }
+.sync[data-state="off"] { --sync-dot: var(--off); }
+.balance { min-width: 0; }
+.bal-num {
+  font-family: var(--f-display); font-weight: 700;
+  font-size: clamp(52px, 10vw, 96px); line-height: 0.95; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; color: var(--band-ink);
+}
+.bal-unit { margin-top: 8px; font-size: 14px; color: var(--band-muted); }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; min-width: 0; }
+.stat { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.stat-k { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--band-muted); }
+.stat-v { font-family: var(--f-mono); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat-sub { font-size: 12px; color: var(--band-muted); line-height: 1.35; }
+.stat-sub.nudge { color: var(--band-accent); }
+.days { display: flex; gap: 3px; margin-top: 2px; }
+.days i { width: 10px; height: 10px; border-radius: 2px; background: var(--band-track); }
+.days i.on { background: var(--ok); }
+.days i.today { box-shadow: 0 0 0 1.5px var(--band-ink); }
+.stat-v .plus { color: #7FD6A3; }
+.stat-v .minus { color: #A9BCF0; }
+.goal { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.goal-text { font-size: 14px; color: var(--band-ink); }
+.goal-text b { font-weight: 600; color: var(--band-accent); }
+.goal-bar { height: 6px; border-radius: 3px; background: var(--band-track); overflow: hidden; }
+.goal-bar i { display: block; height: 100%; background: var(--band-accent); border-radius: 3px; transition: width .4s ease; }
+
+/* ---------- Tabs (phone only) ---------- */
+.tabs {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+}
+.tabs-inner { display: flex; gap: 4px; overflow-x: auto; padding-block: 8px; }
+.tab {
+  flex: 1 0 auto; border: 0; background: transparent; padding: 8px 12px; border-radius: 8px;
+  font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+
+/* ---------- Board ---------- */
+main { padding-block: 22px 40px; }
+.status {
+  margin-bottom: 16px; padding: 10px 14px; border-radius: 10px; font-size: 14px;
+  background: var(--sunk); color: var(--ink);
+}
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.panel, .backup {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px 18px 14px; min-width: 0;
+}
+.panel[data-panel="tasks"] { --tone: var(--earn); --tone-soft: var(--earn-soft); }
+.panel[data-panel="gratitude"] { --tone: var(--warm); --tone-soft: var(--warm-soft); }
+.panel[data-panel="shop"] { --tone: var(--spend); --tone-soft: var(--spend-soft); }
+.panel[data-panel="history"] { --tone: var(--brass); --tone-soft: var(--sunk); }
+.backup { --tone: var(--ink); --tone-soft: var(--sunk); margin-top: 20px; }
+.p-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+.p-head h2 { margin: 0; font-family: var(--f-display); font-weight: 500; font-size: 18px; text-wrap: balance; }
+.p-meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+
+/* forms */
+.add {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 10px; background: var(--sunk);
+  margin-bottom: 14px;
+}
+.field { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+.field:focus { border-color: var(--tone); outline: none; box-shadow: 0 0 0 3px var(--tone-soft); }
+.add .grow { flex: 1 1 180px; }
+.add .num { width: 84px; flex: 0 0 auto; font-family: var(--f-mono); }
+.add select.field { flex: 0 1 auto; }
+.btn {
+  display: inline-block; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 14px;
+  background: var(--tone, var(--ink)); color: var(--surface); white-space: nowrap; line-height: 1.5;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.danger { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1px var(--danger); }
+.btn.small { padding: 6px 10px; font-size: 13px; }
+.icon-btn {
+  border: 0; background: transparent; color: var(--muted); width: 32px; height: 32px; border-radius: 8px;
+  cursor: pointer; display: inline-grid; place-items: center; flex: 0 0 auto;
+}
+.icon-btn:hover { background: var(--sunk); color: var(--ink); }
+.icon-btn svg { width: 16px; height: 16px; }
+
+/* lists */
+.list { list-style: none; margin: 0; padding: 0; }
+.group-h {
+  font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  padding: 12px 0 4px; font-weight: 500;
+}
+.group-h:first-child { padding-top: 0; }
+.row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line);
+}
+.group-h + .row { border-top: 0; }
+.row-main { flex: 1 1 auto; min-width: 0; }
+.row-title { font-weight: 500; overflow-wrap: anywhere; }
+.row-meta { font-size: 13px; color: var(--muted); }
+.chip {
+  display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+  padding: 1px 6px; border-radius: 4px; background: var(--sunk); color: var(--muted); vertical-align: 1px;
+}
+.empty { color: var(--muted); font-size: 14px; padding: 6px 0 8px; }
+
+.tick {
+  flex: 0 0 auto; min-width: 64px; height: 38px; padding: 0 10px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid var(--tone); background: transparent; color: var(--tone);
+  font-family: var(--f-mono); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums;
+  transition: background .15s ease, color .15s ease;
+}
+.tick:hover { background: var(--tone-soft); }
+.tick[aria-pressed="true"] { background: var(--tone); color: var(--surface); }
+
+/* edit form inside list */
+.edit-form { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; padding: 4px 0; }
+.edit-form .grow { flex: 1 1 180px; }
+.edit-form .num { width: 84px; font-family: var(--f-mono); }
+.edit-actions { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+
+/* gratitude */
+.g-form { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: var(--sunk); margin-bottom: 14px; }
+.g-form label { font-size: 13px; color: var(--muted); }
+.g-form textarea { resize: vertical; min-height: 72px; line-height: 1.45; }
+.g-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.g-hint { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.g-item { padding: 10px 0; border-top: 1px solid var(--line); }
+.g-item:first-child { border-top: 0; }
+.g-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.g-meta { font-size: 12px; color: var(--muted); font-family: var(--f-mono); margin-top: 2px; }
+.settings { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.settings summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.settings-body { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; padding-top: 10px; }
+.settings-body label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.settings-body .num { width: 110px; font-family: var(--f-mono); }
+
+/* shop */
+.reward { display: block; padding: 12px 0; border-top: 1px solid var(--line); }
+.reward:first-child { border-top: 0; }
+.r-top { display: flex; align-items: baseline; gap: 10px; }
+.r-title { flex: 1 1 auto; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.r-cost { font-family: var(--f-mono); font-weight: 600; color: var(--tone); font-variant-numeric: tabular-nums; }
+.bar { height: 5px; border-radius: 3px; background: var(--sunk); overflow: hidden; margin: 8px 0; }
+.bar i { display: block; height: 100%; background: var(--tone); border-radius: 3px; }
+.r-foot { display: flex; align-items: center; gap: 8px; }
+.r-need { flex: 1 1 auto; font-size: 13px; color: var(--muted); }
+.r-need.ok { color: var(--tone); font-weight: 500; }
+
+/* history */
+.day-h { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 14px 0 4px; display: flex; justify-content: space-between; }
+.day-h:first-child { padding-top: 0; }
+.h-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 32px; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+.day-h + .h-row { border-top: 0; }
+.h-time { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.h-title { min-width: 0; font-size: 14px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
+.h-pts { font-family: var(--f-mono); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; }
+.h-pts.plus { color: var(--earn); }
+.h-pts.minus { color: var(--spend); }
+.h-pts.zero { color: var(--muted); }
+.h-row .armed { width: auto; padding: 0 8px; color: var(--danger); font-size: 12px; }
+.h-row:has(.armed) { grid-template-columns: 44px minmax(0, 1fr) auto auto; }
+.more { margin-top: 10px; }
+
+.p-tools { display: flex; align-items: center; gap: 10px; }
+
+/* sync panel (collapsed by default) */
+.backup { padding: 0; }
+.bk-sum {
+  list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline;
+  gap: 12px; padding: 14px 18px;
+}
+.bk-sum::-webkit-details-marker { display: none; }
+.bk-title { font-weight: 500; }
+.bk-title::before { content: "›"; display: inline-block; width: 1em; color: var(--muted); transition: transform .15s ease; }
+.backup[open] .bk-title::before { transform: rotate(90deg); }
+.bk-body { padding: 0 18px 16px; }
+.bk-note { margin: 0 0 12px; font-size: 14px; color: var(--muted); max-width: 70ch; }
+.bk-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.bk-paste { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; }
+.bk-paste textarea { font-family: var(--f-mono); font-size: 12px; min-height: 90px; resize: vertical; }
+
+.foot-note { margin-top: 22px; font-size: 13px; color: var(--muted); max-width: 65ch; }
+
+/* toast */
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  display: flex; align-items: center; gap: 14px; width: max-content; max-width: calc(100% - 32px);
+  background: var(--band); color: var(--band-ink); padding: 10px 12px 10px 16px; border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(10, 16, 24, .28); font-size: 14px;
+}
+.toast button { border: 0; background: transparent; color: var(--band-accent); font-weight: 600; cursor: pointer; padding: 4px 6px; }
+
+@media (max-width: 959px) {
+  .cols { display: block; }
+  .col { display: contents; }
+  .panel:not(.active) { display: none; }
+}
+@media (min-width: 960px) {
+  .tabs { display: none; }
+}
+@media (max-width: 560px) {
+  .top-inner { grid-template-columns: 1fr; padding-block: 20px 22px; }
+  .stats { gap: 14px 12px; }
+  .stat-k { font-size: 11px; }
+  .panel { padding: 14px 14px 10px; }
+  .bk-sum { padding: 12px 14px; }
+  .bk-body { padding: 0 14px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<header class="top">
+  <div class="wrap top-inner">
+    <div class="brand">
+      <span class="eyebrow">Система балів</span>
+      <span class="brand-right">
+        <span class="sync" id="syncChip" data-state="off">запуск…</span>
+        <span class="date" id="todayLabel"></span>
+      </span>
+    </div>
+    <div class="balance">
+      <div class="bal-num" id="balance">0</div>
+      <div class="bal-unit" id="balUnit">балів на рахунку</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><span class="stat-k">Сьогодні</span><span class="stat-v" id="todayDelta">+0</span></div>
+      <div class="stat">
+        <span class="stat-k">Серія</span><span class="stat-v" id="taskStreak">0 днів</span>
+        <span class="days" id="taskDays" aria-hidden="true"></span>
+        <span class="stat-sub" id="taskStreakSub"></span>
+      </div>
+      <div class="goal" id="goal"></div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Розділи">
+  <div class="wrap tabs-inner" role="tablist">
+    <button class="tab" role="tab" data-tab="tasks" aria-selected="true">Задачі</button>
+    <button class="tab" role="tab" data-tab="gratitude" aria-selected="false">Вдячність</button>
+    <button class="tab" role="tab" data-tab="shop" aria-selected="false">Магазин</button>
+    <button class="tab" role="tab" data-tab="history" aria-selected="false">Історія</button>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="status" id="status" hidden></div>
+  <div class="cols">
+    <div class="col">
+      <section class="panel active" data-panel="tasks" id="p-tasks">
+        <div class="p-head"><h2>Задачі</h2><span class="p-tools"><span class="p-meta" id="tasksMeta"></span><button class="btn ghost small" type="button" data-toggle="taskForm" aria-expanded="false">+ Додати</button></span></div>
+        <form class="add" id="taskForm" autocomplete="off" hidden>
+          <input class="field grow" id="taskTitle" placeholder="Нова задача" maxlength="120" required aria-label="Назва задачі">
+          <input class="field num" id="taskPoints" type="number" min="1" max="1000" value="10" required aria-label="Бали">
+          <select class="field" id="taskKind" aria-label="Тип задачі">
+            <option value="daily">щодня</option>
+            <option value="repeat">багаторазова</option>
+            <option value="once">разова</option>
+          </select>
+          <button class="btn" type="submit">Додати</button>
+        </form>
+        <ul class="list" id="taskList"></ul>
+      </section>
+
+      <section class="panel" data-panel="gratitude" id="p-gratitude">
+        <div class="p-head"><h2>Вдячність</h2></div>
+        <form class="g-form" id="gForm">
+          <label for="gText">За що я вдячний сьогодні</label>
+          <textarea class="field" id="gText" rows="3" maxlength="800" required></textarea>
+          <div class="g-foot">
+            <span class="g-hint" id="gHint"></span>
+            <button class="btn" type="submit">Записати</button>
+          </div>
+        </form>
+        <details class="settings">
+          <summary>Правила нарахування</summary>
+          <form class="settings-body" id="cfgForm">
+            <label for="cfgPts">Балів за запис<input class="field num" id="cfgPts" type="number" min="0" max="100" required></label>
+            <label for="cfgMax">Записів з балами на день<input class="field num" id="cfgMax" type="number" min="0" max="20" required></label>
+            <button class="btn small" type="submit">Зберегти</button>
+          </form>
+        </details>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="panel" data-panel="shop" id="p-shop">
+        <div class="p-head"><h2>Магазин</h2><button class="btn ghost small" type="button" data-toggle="rewardForm" aria-expanded="false">+ Додати</button></div>
+        <form class="add" id="rewardForm" autocomplete="off" hidden>
+          <input class="field grow" id="rewardTitle" placeholder="Нова нагорода" maxlength="120" required aria-label="Назва нагороди">
+          <input class="field num" id="rewardCost" type="number" min="1" max="100000" value="50" required aria-label="Ціна в балах">
+          <button class="btn" type="submit">Додати</button>
+        </form>
+        <ul class="list" id="rewardList"></ul>
+      </section>
+
+      <section class="panel" data-panel="history" id="p-history">
+        <div class="p-head"><h2>Історія</h2></div>
+        <div id="hList"></div>
+      </section>
+    </div>
+  </div>
+
+  <details class="backup" id="backup">
+    <summary class="bk-sum"><span class="bk-title">Офлайн і синхронізація</span><span class="p-meta" id="bkMeta"></span></summary>
+    <div class="bk-body">
+      <p class="bk-note" id="bkNote"></p>
+      <div class="bk-actions">
+        <button class="btn" type="button" id="bkOffline" hidden>Зберегти офлайн-версію</button>
+        <button class="btn" type="button" id="bkSave">Зберегти копію</button>
+        <button class="btn ghost" type="button" id="bkCopy">Копіювати як текст</button>
+        <label class="btn ghost" for="bkFile">Додати записи з копії</label>
+        <input type="file" id="bkFile" accept="application/json,.json,.txt" hidden>
+      </div>
+      <details class="settings" id="bkPasteBox">
+        <summary>Вставити копію текстом</summary>
+        <div class="bk-paste">
+          <textarea class="field" id="bkText" rows="4" placeholder="Встав сюди текст копії" spellcheck="false"></textarea>
+          <div class="bk-actions"><button class="btn small" type="button" id="bkMerge">Додати записи</button></div>
+        </div>
+      </details>
+    </div>
+  </details>
+</main>
+
+<div class="toast" id="toast" role="status" hidden><span id="toastMsg"></span><button type="button" id="toastUndo" hidden>Скасувати</button></div>
+
+<!--SEED-->
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function plural(n, f) { const a = Math.abs(n) % 100, b = a % 10; if (a > 10 && a < 20) return f[2]; if (b > 1 && b < 5) return f[1]; if (b === 1) return f[0]; return f[2]; }
+  const BAL = ['бал', 'бали', 'балів'];
+  const DAYS = ['день', 'дні', 'днів'];
+  const RECS = ['запис', 'записи', 'записів'];
+  const CHANGES = ['зміна', 'зміни', 'змін'];
+  const pad = (n) => String(n).padStart(2, '0');
+  function dayKey(d) { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function keyToDate(k) { const p = k.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function addDays(k, n) { const d = keyToDate(k); d.setDate(d.getDate() + n); return dayKey(d); }
+  const fmtWeek = new Intl.DateTimeFormat('uk-UA', { weekday: 'long', day: 'numeric', month: 'long' });
+  const fmtDay = new Intl.DateTimeFormat('uk-UA', { day: 'numeric', month: 'long' });
+  const fmtTime = new Intl.DateTimeFormat('uk-UA', { hour: '2-digit', minute: '2-digit' });
+  const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n);
+  const nowIso = () => new Date().toISOString();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const KIND = { daily: 'щодня', repeat: 'багаторазова', once: 'разова' };
+  const TYPE = { task: 'задача', gratitude: 'вдячність', reward: 'нагорода', adjust: 'корекція', bonus: 'бонус' };
+  const PEN = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M10.5 2.5l3 3L5 14H2v-3z"/></svg>';
+  const X = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+  const DEF_CFG = { gratitudePoints: 5, gratitudePerDay: 3, carryPoints: 0 };
+  const COLS = ['tasks', 'rewards', 'ledger'];
+  const KEY = 'sistema-baliv-v1';
+
+  // Where this copy runs: inside claude.ai the shared database is the source of truth;
+  // as a local file everything lives in this browser.
+  const IN_VIEWER = !!(window.claude && typeof window.claude.use === 'function');
+  const MODE = IN_VIEWER ? 'online' : 'offline';
+
+  const S = {
+    db: null, dl: null, dbState: IN_VIEWER ? 'connecting' : 'none', netTrouble: false,
+    tasks: [], rewards: [], ledger: [], cfg: Object.assign({}, DEF_CFG),
+    editing: null, armed: null, histLimit: 60,
+    loaded: { tasks: false, rewards: false, ledger: false, config: false, tombstones: false }, loadTimer: null, slow: false,
+  };
+
+  // ---------- local store: cache + outbox online, the whole record offline ----------
+  let storageOk = true;
+  function emptyStore() { return { app: 'sistema-baliv', version: 2, tasks: {}, rewards: {}, ledger: {}, config: { main: Object.assign({}, DEF_CFG) }, tombstones: {}, outbox: [], meta: {} }; }
+  function normalizeStore(s) {
+    const L = Object.assign(emptyStore(), s || {});
+    COLS.forEach((c) => { if (!L[c] || typeof L[c] !== 'object') L[c] = {}; });
+    if (!L.config || typeof L.config !== 'object') L.config = { main: Object.assign({}, DEF_CFG) };
+    if (!L.config.main) L.config = { main: Object.assign({}, DEF_CFG, L.config) }; // older flat config
+    if (!L.tombstones || typeof L.tombstones !== 'object') L.tombstones = {};
+    if (!Array.isArray(L.outbox)) L.outbox = [];
+    if (!L.meta || typeof L.meta !== 'object') L.meta = {};
+    return L;
+  }
+  function loadLocal() {
+    try { const raw = localStorage.getItem(KEY); if (raw) return normalizeStore(JSON.parse(raw)); }
+    catch (e) { storageOk = false; }
+    return null;
+  }
+  function saveLocal() {
+    try { localStorage.setItem(KEY, JSON.stringify(L)); storageOk = true; return true; }
+    catch (e) { storageOk = false; return false; }
+  }
+  let L = loadLocal() || emptyStore();
+
+  const stamp = (o) => String((o && (o.updatedAt || o.createdAt || o.at)) || '');
+
+  function enqueue(op) {
+    if (MODE !== 'online') return;
+    const k = op.col + '/' + op.id;
+    L.outbox = L.outbox.filter((o) => o.col + '/' + o.id !== k);
+    L.outbox.push(op);
+  }
+  // put(col, id, data) writes a whole document; data === null deletes it and leaves a tombstone,
+  // so a deletion is not undone by an older copy merged later.
+  function put(col, id, data, opts) {
+    opts = opts || {};
+    if (data) {
+      const doc = Object.assign({}, data);
+      if (!opts.keepStamp) doc.updatedAt = nowIso();
+      L[col][id] = doc;
+      if (col !== 'config') delete L.tombstones[col + ':' + id];
+      enqueue({ col, id, data: doc });
+    } else {
+      const at = opts.at || nowIso();
+      delete L[col][id];
+      L.tombstones[col + ':' + id] = at;
+      enqueue({ col, id, data: null });
+      enqueue({ col: 'tombstones', id: col + ':' + id, data: { col, id, at } });
+    }
+  }
+  function commit() {
+    if (!saveLocal() && MODE === 'offline') setStatus('Браузер не дає зберігати дані з цього файлу, тож зміни зникнуть після закриття. Відкрий файл у Chrome, Safari або Firefox або збережи копію перед закриттям.');
+    syncState(); render(); flush();
+  }
+
+  function syncState() {
+    const list = (m) => Object.keys(m).map((id) => Object.assign({}, m[id], { id }));
+    S.tasks = list(L.tasks);
+    S.rewards = list(L.rewards);
+    S.ledger = list(L.ledger).sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')));
+    S.cfg = Object.assign({}, DEF_CFG, L.config.main || {});
+  }
+
+  // ---------- online: subscribe, then push the outbox whenever the store is reachable ----------
+  function applyServer(col, map) {
+    if (col === 'tombstones') {
+      const t = {};
+      Object.keys(map).forEach((k) => { t[k] = map[k].at || ''; });
+      L.outbox.forEach((op) => { if (op.col === 'tombstones' && op.data) t[op.id] = op.data.at; });
+      L.tombstones = t;
+      return;
+    }
+    L[col] = map;
+    L.outbox.forEach((op) => {
+      if (op.col !== col) return;
+      if (op.data) L[col][op.id] = op.data; else delete L[col][op.id];
+    });
+  }
+  function allLoaded() { const l = S.loaded; return l.tasks && l.rewards && l.ledger && l.config && l.tombstones; }
+  function onSnap(col, fromCache) {
+    if (!fromCache) S.loaded[col] = true;
+    if (allLoaded()) { clearTimeout(S.loadTimer); S.slow = false; }
+    saveLocal(); syncState(); render();
+  }
+  function onErr(e) {
+    clearTimeout(S.loadTimer);
+    S.dbState = (e && e.code === 'revoked') ? 'revoked' : 'error';
+    renderSync();
+  }
+  function subscribe(db) {
+    S.loadTimer = setTimeout(() => { if (!allLoaded()) { S.slow = true; renderSync(); } }, 10000);
+    ['tasks', 'rewards', 'ledger', 'tombstones'].forEach((col) => {
+      db.collection(col).onSnapshot((snap) => {
+        const m = {}; snap.docs.forEach((d) => { m[d.id] = Object.assign({}, d.data()); });
+        applyServer(col, m); onSnap(col, snap.metadata.fromCache);
+      }, onErr);
+    });
+    db.doc('config/main').onSnapshot((d) => {
+      const m = {}; if (d.exists) m.main = Object.assign({}, d.data());
+      else m.main = Object.assign({}, DEF_CFG, (L.config && L.config.main) || {});
+      applyServer('config', m); onSnap('config', d.metadata.fromCache);
+    }, onErr);
+  }
+  const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ code: 'timeout' }), ms))]);
+  let flushing = false;
+  async function flush() {
+    if (MODE !== 'online' || !S.db || flushing || !L.outbox.length) { renderSync(); return; }
+    flushing = true;
+    try {
+      while (L.outbox.length) {
+        const op = L.outbox[0];
+        try {
+          const ref = S.db.doc(op.col + '/' + op.id);
+          await withTimeout(op.data ? ref.set(op.data) : ref.delete(), 15000);
+          const i = L.outbox.indexOf(op); if (i >= 0) L.outbox.splice(i, 1);
+          S.netTrouble = false; saveLocal(); renderSync();
+        } catch (e) {
+          const c = e && e.code;
+          if (c === 'invalid_argument' || c === 'transform_error') {
+            const i = L.outbox.indexOf(op); if (i >= 0) L.outbox.splice(i, 1); saveLocal();
+            toast('Одна зміна не прийнялась онлайн і пропущена.');
+            continue;
+          }
+          if (c === 'quota_exceeded') toast('Онлайн-сховище заповнене. Попроси Claude стиснути стару історію.');
+          S.netTrouble = true;
+          break;
+        }
+      }
+    } finally { flushing = false; renderSync(); }
+  }
+  setInterval(flush, 15000);
+  window.addEventListener('online', flush);
+
+  // ---------- merge a copy (from the other side) ----------
+  function toMap(x) {
+    const m = {};
+    if (Array.isArray(x)) x.forEach((o) => { if (o && o.id) { const c = Object.assign({}, o); delete c.id; m[o.id] = c; } });
+    else if (x && typeof x === 'object') Object.keys(x).forEach((k) => { if (x[k] && typeof x[k] === 'object') m[k] = Object.assign({}, x[k]); });
+    return m;
+  }
+  function mergeIncoming(data) {
+    let changed = 0;
+    const tombs = {};
+    const rawT = data.tombstones;
+    if (Array.isArray(rawT)) rawT.forEach((t) => { if (t && t.col && t.id) tombs[t.col + ':' + t.id] = t.at || ''; });
+    else if (rawT && typeof rawT === 'object') Object.keys(rawT).forEach((k) => { tombs[k] = typeof rawT[k] === 'string' ? rawT[k] : (rawT[k] && rawT[k].at) || ''; });
+    Object.keys(tombs).forEach((key) => {
+      const i = key.indexOf(':'); const col = key.slice(0, i); const id = key.slice(i + 1);
+      if (COLS.indexOf(col) < 0) return;
+      const at = tombs[key]; const cur = L[col][id];
+      if (cur && stamp(cur) <= at) { put(col, id, null, { at }); changed++; }
+      else if (!cur && (!L.tombstones[key] || L.tombstones[key] < at)) { put(col, id, null, { at }); }
+    });
+    COLS.forEach((col) => {
+      const m = toMap(data[col]);
+      Object.keys(m).forEach((id) => {
+        const r = m[id]; const t = L.tombstones[col + ':' + id];
+        if (t && t >= stamp(r)) return;
+        const cur = L[col][id];
+        if (!cur || stamp(r) > stamp(cur)) { put(col, id, r, { keepStamp: true }); changed++; }
+      });
+    });
+    let cfg = data.config;
+    if (cfg && cfg.main) cfg = cfg.main;
+    if (cfg && typeof cfg === 'object' && stamp(cfg) > stamp(L.config.main)) { put('config', 'main', Object.assign({}, DEF_CFG, cfg), { keepStamp: true }); changed++; }
+    return changed;
+  }
+  function exportData() {
+    const arr = (m) => Object.keys(m).map((id) => Object.assign({ id }, m[id]));
+    return { app: 'sistema-baliv', version: 2, exportedAt: nowIso(), from: MODE, config: L.config.main, tasks: arr(L.tasks), rewards: arr(L.rewards), ledger: arr(L.ledger), tombstones: Object.assign({}, L.tombstones) };
+  }
+
+  // ---------- derived ----------
+  function balance() { return (Number(S.cfg.carryPoints) || 0) + S.ledger.reduce((s, e) => s + (Number(e.points) || 0), 0); }
+  function entryDay(e) { return e.day || (e.at ? dayKey(new Date(e.at)) : ''); }
+  function todayStats() {
+    const t = dayKey(); let plus = 0, minus = 0;
+    S.ledger.forEach((e) => { if (entryDay(e) !== t) return; const p = Number(e.points) || 0; if (p > 0) plus += p; else minus += p; });
+    return { plus, minus };
+  }
+  function gratitudeToday() { const t = dayKey(); return S.ledger.filter((e) => e.type === 'gratitude' && entryDay(e) === t); }
+  // A day counts toward a streak when it has at least one matching entry.
+  // Today without an entry yet does not break the streak; it only stays open until midnight.
+  const keepsStreak = (e) => (e.type === 'task' && (Number(e.points) || 0) > 0) || e.type === 'gratitude';
+  function streakOf(pred) {
+    const days = new Set(S.ledger.filter(pred).map(entryDay));
+    const today = dayKey(); const doneToday = days.has(today);
+    let k = doneToday ? today : addDays(today, -1);
+    let n = 0; while (days.has(k)) { n++; k = addDays(k, -1); }
+    let best = 0, run = 0, prev = null;
+    Array.from(days).sort().forEach((d) => { run = prev && addDays(prev, 1) === d ? run + 1 : 1; if (run > best) best = run; prev = d; });
+    const last7 = []; for (let i = 6; i >= 0; i--) { const d = addDays(today, -i); last7.push({ on: days.has(d), today: i === 0 }); }
+    return { n, doneToday, best, last7 };
+  }
+  // One short line under the streak: a nudge while today is still open, otherwise the record if it is higher.
+  function streakSub(st) {
+    if (!st.doneToday && st.n) return { text: 'сьогодні ще ні', nudge: true };
+    if (st.best > st.n) return { text: 'рекорд ' + st.best, nudge: false };
+    return { text: '', nudge: false };
+  }
+
+  // ---------- render ----------
+  function render() {
+    const ae = document.activeElement; const fid = ae && ae.id; let sel = null;
+    try { if (ae && ae.selectionStart != null) sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) {}
+    renderTop(); renderTasks(); renderGratitude(); renderShop(); renderHistory(); renderSync();
+    if (fid) {
+      const el = document.getElementById(fid);
+      if (el && el !== document.activeElement) {
+        el.focus({ preventScroll: true });
+        try { if (sel) el.setSelectionRange(sel[0], sel[1]); } catch (e) {}
+      }
+    }
+  }
+
+  function renderTop() {
+    const b = balance();
+    $('#todayLabel').textContent = fmtWeek.format(new Date());
+    $('#balance').textContent = b.toLocaleString('uk-UA');
+    $('#balUnit').textContent = plural(b, BAL) + ' на рахунку';
+    const t = todayStats();
+    $('#todayDelta').innerHTML = '<span class="plus">+' + t.plus + '</span>' + (t.minus ? ' <span class="minus">−' + Math.abs(t.minus) + '</span>' : '');
+    const ts = streakOf(keepsStreak);
+    $('#taskStreak').textContent = ts.n + ' ' + plural(ts.n, DAYS);
+    $('#taskDays').innerHTML = ts.last7.map((d) => '<i class="' + (d.on ? 'on' : '') + (d.today ? ' today' : '') + '"></i>').join('');
+    const tsub = streakSub(ts); const subEl = $('#taskStreakSub');
+    subEl.textContent = tsub.text; subEl.hidden = !tsub.text; subEl.classList.toggle('nudge', tsub.nudge);
+    $('#taskDays').title = 'Останні 7 днів: зараховується день із задачею або вдячністю';
+    const rewards = S.rewards.filter((r) => !r.archived).sort((a, b2) => a.cost - b2.cost);
+    const next = rewards.find((r) => r.cost > b);
+    let html;
+    if (!rewards.length) html = '<span class="goal-text">Додай нагороди в магазин, і тут зʼявиться найближча ціль.</span>';
+    else if (!next) html = '<span class="goal-text">Балів вистачає на будь-яку нагороду з магазину.</span><div class="goal-bar"><i style="width:100%"></i></div>';
+    else {
+      const need = next.cost - b; const pct = Math.max(0, Math.min(100, Math.round((Math.max(b, 0) / next.cost) * 100)));
+      html = '<span class="goal-text">До «' + esc(next.title) + '» ще <b>' + need + ' ' + plural(need, BAL) + '</b></span><div class="goal-bar"><i style="width:' + pct + '%"></i></div>';
+    }
+    $('#goal').innerHTML = html;
+  }
+
+  function editFormHTML(type, id) {
+    const d = S.editing.draft; const isTask = type === 'task'; const armed = S.armed === 'del:' + id;
+    return '<li class="row" data-id="' + esc(id) + '"><form class="edit-form" data-form="' + type + '-edit" data-id="' + esc(id) + '" autocomplete="off">' +
+      '<input class="field grow" id="e-title-' + esc(id) + '" name="title" value="' + esc(d.title) + '" maxlength="120" required aria-label="Назва">' +
+      '<input class="field num" id="e-num-' + esc(id) + '" name="' + (isTask ? 'points' : 'cost') + '" type="number" min="1" max="100000" value="' + esc(isTask ? d.points : d.cost) + '" required aria-label="' + (isTask ? 'Бали' : 'Ціна') + '">' +
+      (isTask ? '<select class="field" id="e-kind-' + esc(id) + '" name="kind">' + Object.keys(KIND).map((k) => '<option value="' + k + '"' + (d.kind === k ? ' selected' : '') + '>' + KIND[k] + '</option>').join('') + '</select>' : '') +
+      '<div class="edit-actions"><button class="btn small" type="submit">Зберегти</button>' +
+      '<button class="btn ghost small" type="button" data-act="cancel">Скасувати</button>' +
+      '<button class="btn danger small" type="button" data-act="del">' + (armed ? 'Точно видалити?' : 'Видалити') + '</button></div>' +
+      '</form></li>';
+  }
+
+  function renderTasks() {
+    const today = dayKey(); const countToday = {};
+    S.ledger.forEach((e) => { if (e.type === 'task' && e.refId && entryDay(e) === today) countToday[e.refId] = (countToday[e.refId] || 0) + 1; });
+    const active = S.tasks.filter((t) => !t.archived && !(t.kind === 'once' && t.doneAt));
+    const groups = [['daily', 'Щоденні'], ['repeat', 'Багаторазові'], ['once', 'Разові']];
+    let html = '';
+    groups.forEach(([kind, label]) => {
+      const items = active.filter((t) => (t.kind || 'repeat') === kind).sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      if (!items.length) return;
+      html += '<li class="group-h">' + label + '</li>';
+      items.forEach((t) => {
+        if (S.editing && S.editing.type === 'task' && S.editing.id === t.id) { html += editFormHTML('task', t.id); return; }
+        const n = countToday[t.id] || 0; const done = kind === 'daily' && n > 0;
+        let meta = '';
+        if (kind === 'daily' && done) meta = 'виконано сьогодні';
+        if (kind === 'repeat' && n) meta = 'сьогодні ×' + n;
+        html += '<li class="row" data-id="' + esc(t.id) + '">' +
+          '<button class="tick" type="button" data-act="complete" aria-pressed="' + done + '" title="' + (done ? 'Скасувати сьогоднішнє виконання' : 'Позначити виконаною') + '">' + (done ? '✓ ' : '+') + (Number(t.points) || 0) + '</button>' +
+          '<div class="row-main"><div class="row-title">' + esc(t.title) + (t.example ? ' <span class="chip">приклад</span>' : '') + '</div>' + (meta ? '<div class="row-meta">' + meta + '</div>' : '') + '</div>' +
+          '<button class="icon-btn" type="button" data-act="edit-task" aria-label="Змінити задачу">' + PEN + '</button></li>';
+      });
+    });
+    if (!html) { html = '<li class="empty">Ще немає задач. Додай першу: назву і скільки балів вона дає.</li>'; if (MODE === 'offline' || allLoaded()) openForm('taskForm'); }
+    $('#taskList').innerHTML = html;
+    const dailyAll = active.filter((t) => t.kind === 'daily');
+    const dailyDone = dailyAll.filter((t) => countToday[t.id]).length;
+    $('#tasksMeta').textContent = dailyAll.length ? 'щоденні ' + dailyDone + '/' + dailyAll.length : '';
+  }
+
+  function renderGratitude() {
+    const pts = Number(S.cfg.gratitudePoints) || 0; const max = Number(S.cfg.gratitudePerDay) || 0;
+    const paid = gratitudeToday().filter((e) => (Number(e.points) || 0) > 0).length;
+    $('#gHint').textContent = paid < max && pts > 0
+      ? '+' + pts + ' ' + plural(pts, BAL) + ' · сьогодні ' + paid + ' з ' + max
+      : 'Ліміт на сьогодні вичерпано · запис збережеться без балів';
+    const ptsEl = $('#cfgPts'), maxEl = $('#cfgMax');
+    if (document.activeElement !== ptsEl) ptsEl.value = pts;
+    if (document.activeElement !== maxEl) maxEl.value = max;
+  }
+
+  function renderShop() {
+    const b = balance();
+    const items = S.rewards.filter((r) => !r.archived).sort((a, c) => (a.cost || 0) - (c.cost || 0));
+    if (!items.length && (MODE === 'offline' || allLoaded())) openForm('rewardForm');
+    $('#rewardList').innerHTML = items.length
+      ? items.map((r) => {
+          if (S.editing && S.editing.type === 'reward' && S.editing.id === r.id) return editFormHTML('reward', r.id);
+          const cost = Number(r.cost) || 0; const ok = b >= cost; const need = cost - b;
+          const pct = cost ? Math.max(0, Math.min(100, Math.round((Math.max(b, 0) / cost) * 100))) : 100;
+          return '<li class="reward" data-id="' + esc(r.id) + '">' +
+            '<div class="r-top"><span class="r-title">' + esc(r.title) + (r.example ? ' <span class="chip">приклад</span>' : '') + '</span><span class="r-cost">' + cost + '</span></div>' +
+            '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
+            '<div class="r-foot"><span class="r-need' + (ok ? ' ok' : '') + '">' + (ok ? 'Можна взяти' : 'ще ' + need + ' ' + plural(need, BAL)) + '</span>' +
+            (ok ? '<button class="btn small" type="button" data-act="buy">Взяти</button>' : '') +
+            '<button class="icon-btn" type="button" data-act="edit-reward" aria-label="Змінити нагороду">' + PEN + '</button></div></li>';
+        }).join('')
+      : '<li class="empty">Магазин порожній. Додай те, що радує і не шкодить.</li>';
+  }
+
+  function renderHistory() {
+    const list = S.ledger.slice(0, S.histLimit); const tk = dayKey(), yk = addDays(tk, -1);
+    let html = ''; let cur = null; const daySum = {};
+    S.ledger.forEach((e) => { const d = entryDay(e); daySum[d] = (daySum[d] || 0) + (Number(e.points) || 0); });
+    list.forEach((e) => {
+      const d = entryDay(e);
+      if (d !== cur) {
+        cur = d;
+        const label = d === tk ? 'Сьогодні' : d === yk ? 'Вчора' : fmtDay.format(keyToDate(d));
+        html += '<div class="day-h"><span>' + label + '</span><span>' + signed(daySum[d] || 0) + '</span></div>';
+      }
+      const p = Number(e.points) || 0; const armed = S.armed === 'undo:' + e.id;
+      const title = e.type === 'gratitude' ? (e.text || e.title) : e.title;
+      html += '<div class="h-row" data-id="' + esc(e.id) + '">' +
+        '<span class="h-time">' + (e.at ? fmtTime.format(new Date(e.at)) : '') + '</span>' +
+        '<span class="h-title"><span class="chip">' + esc(TYPE[e.type] || e.type || 'запис') + '</span> ' + esc(title) + '</span>' +
+        '<span class="h-pts ' + (p > 0 ? 'plus' : p < 0 ? 'minus' : 'zero') + '">' + (p ? signed(p) : '0') + '</span>' +
+        '<button class="icon-btn' + (armed ? ' armed' : '') + '" type="button" data-act="undo" aria-label="Скасувати запис">' + (armed ? 'Видалити?' : X) + '</button></div>';
+    });
+    if (S.ledger.length > S.histLimit) html += '<button class="btn ghost small more" type="button" data-act="more">Показати ще</button>';
+    if (!html) html = '<div class="empty">Історія порожня. Виконай задачу або запиши вдячність, і тут зʼявиться перший запис.</div>';
+    $('#hList').innerHTML = html;
+  }
+
+  function renderSync() {
+    const chip = $('#syncChip'); const n = L.outbox.length;
+    let state, text;
+    if (MODE === 'offline') { state = 'off'; text = 'на цьому пристрої'; }
+    else if (S.dbState === 'connecting') { state = n ? 'wait' : 'off'; text = n ? 'не відправлено: ' + n : 'зʼєднуюсь…'; }
+    else if (S.dbState !== 'ready') { state = 'wait'; text = 'онлайн-дані недоступні' + (n ? ' · не відправлено: ' + n : ''); }
+    else if (n) { state = 'wait'; text = 'не відправлено: ' + n; }
+    else if (S.slow || S.netTrouble) { state = 'wait'; text = 'немає зʼєднання'; }
+    else { state = 'ok'; text = 'синхронізовано'; }
+    chip.dataset.state = state; chip.textContent = text;
+
+    if (MODE === 'online') {
+      $('#bkNote').textContent = 'Записи зберігаються онлайн, і Claude їх бачить. Без інтернету працює офлайн-версія: збережи її тут, а потім додай копію з неї назад або надішли Claude.';
+      $('#bkMeta').textContent = n ? n + ' ' + plural(n, CHANGES) + ' в черзі' : '';
+      $('#bkOffline').hidden = !S.dl;
+      $('#bkSave').classList.toggle('ghost', !!S.dl);
+      $('#bkSave').hidden = !S.dl;
+    } else {
+      const last = L.meta.lastBackup;
+      $('#bkNote').textContent = 'Записи зберігаються в цьому браузері. Щоб перенести їх онлайн, збережи копію і додай її на онлайн-сторінці або надішли Claude. Дублів не буде.';
+      $('#bkMeta').textContent = last ? 'остання копія ' + fmtDay.format(new Date(last)) + ', ' + fmtTime.format(new Date(last)) : 'копій ще не було';
+      $('#bkOffline').hidden = true;
+      $('#bkSave').textContent = 'Зберегти копію для онлайн';
+    }
+  }
+
+  // ---------- status / toast ----------
+  function setStatus(msg) { const el = $('#status'); el.hidden = !msg; el.textContent = msg || ''; }
+  let toastTimer = null; let toastUndo = null;
+  function toast(msg, undo) {
+    $('#toastMsg').textContent = msg; toastUndo = undo || null;
+    $('#toastUndo').hidden = !undo; $('#toast').hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { $('#toast').hidden = true; toastUndo = null; }, 6000);
+  }
+  $('#toastUndo').addEventListener('click', () => { const f = toastUndo; $('#toast').hidden = true; toastUndo = null; if (f) f(); });
+
+  // ---------- actions ----------
+  function addEntry(fields) {
+    const now = new Date(); const id = uid();
+    put('ledger', id, Object.assign({ at: now.toISOString(), day: dayKey(now) }, fields));
+    return id;
+  }
+  function removeEntry(id) {
+    const e = L.ledger[id];
+    put('ledger', id, null);
+    if (e && e.type === 'task' && e.refId) {
+      const t = L.tasks[e.refId];
+      if (t && t.kind === 'once' && t.doneAt) put('tasks', e.refId, Object.assign({}, t, { doneAt: null }));
+    }
+    commit();
+  }
+  function completeTask(id) {
+    const t = L.tasks[id]; if (!t) return;
+    const today = dayKey();
+    if (t.kind === 'daily') {
+      const ex = S.ledger.find((e) => e.type === 'task' && e.refId === id && entryDay(e) === today);
+      if (ex) { removeEntry(ex.id); return; }
+    }
+    const pts = Number(t.points) || 0;
+    const entryId = addEntry({ type: 'task', title: t.title, points: pts, refId: id });
+    if (t.kind === 'once') put('tasks', id, Object.assign({}, t, { doneAt: nowIso() }));
+    commit();
+    toast('+' + pts + ' за «' + t.title + '»', () => removeEntry(entryId));
+  }
+  function buy(id) {
+    const r = L.rewards[id]; if (!r) return;
+    const cost = Number(r.cost) || 0;
+    if (balance() < cost) return;
+    const entryId = addEntry({ type: 'reward', title: r.title, points: -cost, refId: id });
+    commit();
+    toast('Нагорода «' + r.title + '» твоя. −' + cost, () => removeEntry(entryId));
+  }
+
+  // ---------- events ----------
+  // "+ Додати" opens the add form; it stays open for several items until "Готово".
+  function setForm(id, open) {
+    const f = document.getElementById(id); const btn = document.querySelector('[data-toggle="' + id + '"]');
+    if (!f) return;
+    f.hidden = !open;
+    if (btn) { btn.setAttribute('aria-expanded', String(open)); btn.textContent = open ? 'Готово' : '+ Додати'; }
+  }
+  function openForm(id) { const f = document.getElementById(id); if (f && f.hidden) setForm(id, true); }
+
+  document.addEventListener('click', (ev) => {
+    const tab = ev.target.closest('[data-tab]');
+    if (tab) { location.hash = tab.dataset.tab; setTab(tab.dataset.tab); return; }
+    const tg = ev.target.closest('[data-toggle]');
+    if (tg) {
+      const id = tg.dataset.toggle; const f = document.getElementById(id); const open = !!(f && f.hidden);
+      setForm(id, open);
+      if (open) { const inp = f.querySelector('input'); if (inp) inp.focus(); }
+      return;
+    }
+    const b = ev.target.closest('[data-act]'); if (!b) return;
+    const act = b.dataset.act; const holder = b.closest('[data-id]'); const id = holder && holder.dataset.id;
+    if (act === 'complete') completeTask(id);
+    else if (act === 'buy') buy(id);
+    else if (act === 'edit-task' || act === 'edit-reward') {
+      const type = act === 'edit-task' ? 'task' : 'reward';
+      const src = type === 'task' ? L.tasks[id] : L.rewards[id]; if (!src) return;
+      S.editing = { type, id, draft: { title: src.title, points: src.points, cost: src.cost, kind: src.kind || 'repeat' } };
+      S.armed = null; render();
+      const el = document.getElementById('e-title-' + id); if (el) el.focus();
+    } else if (act === 'cancel') { S.editing = null; S.armed = null; render(); }
+    else if (act === 'del') {
+      if (!S.editing) return;
+      if (S.armed !== 'del:' + S.editing.id) { S.armed = 'del:' + S.editing.id; render(); return; }
+      const { type, id: eid } = S.editing;
+      S.editing = null; S.armed = null;
+      put(type === 'task' ? 'tasks' : 'rewards', eid, null); commit();
+      toast(type === 'task' ? 'Задачу видалено' : 'Нагороду видалено');
+    } else if (act === 'undo') {
+      if (S.armed !== 'undo:' + id) {
+        S.armed = 'undo:' + id; render();
+        setTimeout(() => { if (S.armed === 'undo:' + id) { S.armed = null; render(); } }, 4000);
+        return;
+      }
+      S.armed = null; removeEntry(id); toast('Запис видалено');
+    } else if (act === 'more') { S.histLimit += 60; render(); }
+  });
+
+  document.addEventListener('input', (ev) => {
+    const f = ev.target.closest('.edit-form'); if (!f || !S.editing) return;
+    const n = ev.target.name; if (n) S.editing.draft[n] = ev.target.value;
+  });
+
+  document.addEventListener('submit', (ev) => {
+    const f = ev.target; const kind = f.dataset.form;
+    if (kind !== 'task-edit' && kind !== 'reward-edit') return;
+    ev.preventDefault();
+    const d = S.editing && S.editing.draft; if (!d) return;
+    const id = f.dataset.id; const title = String(d.title || '').trim(); if (!title) return;
+    const col = kind === 'task-edit' ? 'tasks' : 'rewards'; const cur = L[col][id]; if (!cur) return;
+    let patch;
+    if (col === 'tasks') { const pts = Math.round(Number(d.points)); if (!(pts >= 1)) return; patch = { title, points: pts, kind: d.kind, example: false }; }
+    else { const cost = Math.round(Number(d.cost)); if (!(cost >= 1)) return; patch = { title, cost, example: false }; }
+    S.editing = null; S.armed = null;
+    put(col, id, Object.assign({}, cur, patch)); commit(); toast('Збережено');
+  });
+
+  $('#taskForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const title = $('#taskTitle').value.trim(); const pts = Math.round(Number($('#taskPoints').value)); const kind = $('#taskKind').value;
+    if (!title || !(pts >= 1)) return;
+    put('tasks', uid(), { title, points: pts, kind, archived: false, createdAt: nowIso() }); commit();
+    $('#taskTitle').value = ''; $('#taskTitle').focus();
+  });
+
+  $('#rewardForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const title = $('#rewardTitle').value.trim(); const cost = Math.round(Number($('#rewardCost').value));
+    if (!title || !(cost >= 1)) return;
+    put('rewards', uid(), { title, cost, archived: false, createdAt: nowIso() }); commit();
+    $('#rewardTitle').value = ''; $('#rewardTitle').focus();
+  });
+
+  $('#gForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const text = $('#gText').value.trim(); if (!text) return;
+    const pts = Number(S.cfg.gratitudePoints) || 0; const max = Number(S.cfg.gratitudePerDay) || 0;
+    const paid = gratitudeToday().filter((e) => (Number(e.points) || 0) > 0).length;
+    const award = paid < max ? pts : 0;
+    const entryId = addEntry({ type: 'gratitude', title: 'Запис вдячності', text, points: award });
+    commit();
+    $('#gText').value = '';
+    toast(award ? 'Записано. +' + award : 'Записано без балів: денний ліміт вичерпано', () => removeEntry(entryId));
+  });
+
+  $('#cfgForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const pts = Math.round(Number($('#cfgPts').value)); const max = Math.round(Number($('#cfgMax').value));
+    if (!(pts >= 0) || !(max >= 0)) return;
+    put('config', 'main', Object.assign({}, DEF_CFG, L.config.main, { gratitudePoints: pts, gratitudePerDay: max })); commit();
+    toast('Правила збережено');
+  });
+
+  // ---------- sync panel ----------
+  function markBackup() { L.meta.lastBackup = nowIso(); saveLocal(); renderSync(); }
+  async function saveFile(name, text) {
+    if (MODE === 'online') {
+      if (!S.dl) throw { code: 'unavailable' };
+      await S.dl.save({ filename: name, data: text });
+      return;
+    }
+    // On a phone the share sheet is the natural way out (send to Claude, save to Files).
+    try {
+      const file = new File([text], name, { type: 'application/json' });
+      if (window.matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'Копія системи балів' });
+        return;
+      }
+    } catch (e) { if (e && e.name === 'AbortError') throw { code: 'declined' }; }
+    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  $('#bkSave').addEventListener('click', async () => {
+    try {
+      await saveFile('sistema-baliv-kopiya-' + dayKey() + '.json', JSON.stringify(exportData(), null, 2));
+      markBackup(); toast(MODE === 'offline' ? 'Копію збережено в Завантаження' : 'Копію збережено');
+    } catch (e) { if (!(e && e.code === 'declined')) toast('Не вдалося зберегти файл. Спробуй «Копіювати як текст».'); }
+  });
+  $('#bkOffline').addEventListener('click', async () => {
+    let src;
+    try {
+      const r = await fetch('app.html', { cache: 'no-store' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      src = await r.text();
+    } catch (e) { toast('Не вдалося підготувати файл. Попроси Claude в чаті надіслати офлайн-версію.'); return; }
+    const seed = Object.assign(exportData(), { seedId: uid() });
+    const json = JSON.stringify(seed).replace(/</g, '\\u003c');
+    const marker = '<!--' + 'SEED-->';
+    const html = src.replace(marker, '<script type="application/json" id="seed">' + json + '<\/script>');
+    try { await S.dl.save({ filename: 'sistema-baliv.html', data: html }); toast('Офлайн-версію збережено. Відкрий файл у браузері.'); }
+    catch (e) { if (!(e && e.code === 'declined')) toast('Файл не збережено. Попроси Claude в чаті надіслати офлайн-версію.'); }
+  });
+  $('#bkCopy').addEventListener('click', () => {
+    const json = JSON.stringify(exportData());
+    const fallback = () => {
+      $('#backup').open = true; $('#bkPasteBox').open = true; const ta = $('#bkText'); ta.value = json; ta.focus(); ta.select();
+      toast('Текст копії в полі нижче. Скопіюй його вручну.');
+    };
+    try {
+      navigator.clipboard.writeText(json).then(() => { markBackup(); toast('Скопійовано. Можна вставити в чат з Claude.'); }, fallback);
+    } catch (e) { fallback(); }
+  });
+  function importText(text) {
+    let data;
+    try { data = JSON.parse(String(text || '').trim()); } catch (e) { toast('Це не схоже на копію: текст не читається.'); return; }
+    if (!data || typeof data !== 'object' || !(data.tasks || data.rewards || data.ledger)) { toast('У копії немає задач, нагород чи історії.'); return; }
+    S.editing = null; S.armed = null;
+    const n = mergeIncoming(data); commit();
+    if (n && storageOk) setStatus(null);
+    toast(n ? 'Додано або оновлено: ' + n + (MODE === 'online' ? '. Відправляю онлайн.' : '') : 'Усі записи з копії вже тут');
+  }
+  $('#bkFile').addEventListener('change', (ev) => {
+    const file = ev.target.files && ev.target.files[0]; if (!file) return;
+    const r = new FileReader();
+    r.onload = () => { importText(r.result); ev.target.value = ''; };
+    r.onerror = () => { toast('Не вдалося прочитати файл.'); ev.target.value = ''; };
+    r.readAsText(file);
+  });
+  $('#bkMerge').addEventListener('click', () => { importText($('#bkText').value); });
+
+  // ---------- tabs ----------
+  const TABS = ['tasks', 'gratitude', 'shop', 'history'];
+  function setTab(name) {
+    if (TABS.indexOf(name) < 0) name = 'tasks';
+    document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('active', p.dataset.panel === name));
+    document.querySelectorAll('[data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  }
+  window.addEventListener('hashchange', () => setTab(location.hash.slice(1)));
+  setTab(location.hash.slice(1));
+
+  // other tabs of the same copy stay in step
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY) return;
+    const s = loadLocal(); if (!s) return;
+    L = s; syncState(); render();
+  });
+
+  // ---------- start ----------
+  if (MODE === 'offline') {
+    const el = document.getElementById('seed');
+    if (el) {
+      try {
+        const seed = JSON.parse(el.textContent);
+        const sid = seed.seedId || seed.exportedAt;
+        L.meta.seeds = L.meta.seeds || [];
+        if (sid && L.meta.seeds.indexOf(sid) < 0) { mergeIncoming(seed); L.meta.seeds.push(sid); }
+      } catch (e) {}
+    }
+    saveLocal();
+    // First run with nothing stored: point straight at bringing records over from the online system.
+    if (!Object.keys(L.tasks).length && !Object.keys(L.rewards).length && !Object.keys(L.ledger).length) {
+      $('#backup').open = true; $('#bkPasteBox').open = true;
+      setStatus('Тут ще порожньо. Щоб перенести свої записи, відкрий онлайн-систему, натисни «Копіювати як текст» у блоці «Офлайн і синхронізація» і встав текст нижче.');
+    }
+    if (!storageOk) setStatus('Браузер не дає зберігати дані з цього файлу, тож зміни зникнуть після закриття. Відкрий файл у Chrome, Safari або Firefox або збережи копію перед закриттям.');
+  }
+  syncState(); render();
+
+  if (MODE === 'online') {
+    (async () => {
+      let db = null;
+      try { db = await window.claude.use('db'); } catch (e) { db = null; }
+      if (!db) { S.dbState = 'none'; renderSync(); return; }
+      S.db = db; S.dbState = 'ready';
+      try { S.dl = await window.claude.use('downloads'); } catch (e) { S.dl = null; }
+      subscribe(db); render(); flush();
+    })();
+  }
+
+  let lastDay = dayKey();
+  setInterval(() => { const k = dayKey(); if (k !== lastDay) { lastDay = k; render(); } }, 60000);
+})();
+</script>
+<script>if("serviceWorker" in navigator){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}</script></body></html>
