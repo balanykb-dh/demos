@@ -771,7 +771,7 @@ main { padding-block: 22px 40px; }
             '<div class="r-top"><span class="r-title">' + esc(r.title) + (r.example ? ' <span class="chip">приклад</span>' : '') + '</span><span class="r-cost">' + cost + '</span></div>' +
             '<div class="bar"><i style="width:' + pct + '%"></i></div>' +
             '<div class="r-foot"><span class="r-need' + (ok ? ' ok' : '') + '">' + (ok ? 'Можна взяти' : 'ще ' + need + ' ' + plural(need, BAL)) + '</span>' +
-            (ok ? '<button class="btn small" type="button" data-act="buy">Взяти</button>' : '') +
+            '<button class="btn small" type="button" data-act="buy"' + (ok ? '' : ' disabled title="Ще не вистачає балів"') + '>Взяти</button>' +
             '<button class="icon-btn" type="button" data-act="edit-reward" aria-label="Змінити нагороду">' + PEN + '</button></div></li>';
         }).join('')
       : '<li class="empty">Магазин порожній. Додай те, що радує і не шкодить.</li>';
